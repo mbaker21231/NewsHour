@@ -1,0 +1,1302 @@
+
+  ___  ____  ____  ____  ____ (R)
+ /__    /   ____/   /   ____/
+___/   /   /___/   /   /___/   12.1   Copyright 1985-2011 StataCorp LP
+  Statistics/Data Analysis            StataCorp
+                                      4905 Lakeway Drive
+     MP - Parallel Edition            College Station, Texas 77845 USA
+                                      800-STATA-PC        http://www.stata.com
+                                      979-696-4600        stata@stata.com
+                                      979-696-4601 (fax)
+
+Single-user 2-core Stata perpetual license:
+       Serial number:  50120537448
+         Licensed to:  Partha Deb
+                       Hunter College
+
+Notes:
+      1.  (/v# option or -set maxvar-) 5000 maximum variables
+      2.  Stata running in batch mode
+
+. do C:\Users\mjbaker\Documents\GitHub\NewsHour\StataDoFiles\Ne
+> wsHourNotesPartVI.do 
+
+. 
+. clear all
+
+. cd C:\Users\mjbaker\Documents\Github\NewsHour
+C:\Users\mjbaker\Documents\GitHub\NewsHour
+
+. use AveragedDataDyno.dta
+
+. set more off
+
+. set seed 8675309
+
+. capture gen game= (lnews | otherl) & lnpps!=.
+
+. bysort stationid: egen countl=total(lnews)
+
+. gen game2 = game
+
+. replace game2 = 0 if countl ==0
+(1328 real changes made)
+
+. sort market stationid mt timeslot
+
+. 
+. gen useOrd =_n
+
+. tsset stationid timeslot
+       panel variable:  stationid (strongly balanced)
+        time variable:  timeslot, 3 to 8
+                delta:  1 unit
+
+. gen otherlPrime=lnews&game
+
+. gen lnewsPrime =otherl&game
+
+. gen nnewsPrime =nnews&game
+
+. gen lnewslnewsPrime=otherl*l.lnews
+(16622 missing values generated)
+
+. gen lnewsnnewsPrime=otherl*l.nnews
+(16622 missing values generated)
+
+. gen nnewslnewsPrime=nnews*l.lnews
+(16622 missing values generated)
+
+. gen nnewsnnewsPrime=nnews*l.nnews
+(16622 missing values generated)
+
+. gen lsiPrime=l.si
+(16622 missing values generated)
+
+. replace lsiPrime=ln(lsiPrime)
+(83110 real changes made)
+
+. replace lsiPrime=0 if lsiPrime==.
+(16622 real changes made)
+
+. gen siXlnlnPrime=lnewslnewsPrime*lsi
+(16622 missing values generated)
+
+. gen siXlnnnPrime=lnewsnnewsPrime*lsi
+(16622 missing values generated)
+
+. gen siXnnlnPrime=nnewslnewsPrime*lsi
+(16622 missing values generated)
+
+. gen siXnnnnPrime=nnewsnnewsPrime*lsi
+(16622 missing values generated)
+
+. gen lnewstotPrime=otherl*ln(1+totslnews)
+
+. gen nnewstotPrime=nnews*ln(1+totsnnews)
+
+. sort useOrd 
+
+. 
+. mata:
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+:     st_view(lnewsPrime=.,.,"lnewsPrime")
+
+:     st_view(otherlPrime=.,.,"otherlPrime")
+
+:     st_view(nnewsPrime=.,.,"nnewsPrime")
+
+:     st_view(lnewslnewsPrime=.,.,"lnewslnewsPrime")
+
+:     st_view(lnewsnnewsPrime=.,.,"lnewsnnewsPrime")
+
+:     st_view(nnewslnewsPrime=.,.,"nnewslnewsPrime")
+
+:     st_view(nnewsnnewsPrime=.,.,"nnewsnnewsPrime")
+
+:     st_view(lsiPrime=.,.,"lsiPrime")
+
+:     st_view(siXlnlnPrime=.,.,"siXlnlnPrime")
+
+:     st_view(siXlnnnPrime=.,.,"siXlnnnPrime")
+
+:     st_view(siXnnlnPrime=.,.,"siXnnlnPrime")
+
+:     st_view(siXnnnnPrime=.,.,"siXnnnnPrime")
+
+:     st_view(lnewstotPrime=.,.,"lnewstotPrime")
+
+:     st_view(nnewstotPrime=.,.,"nnewstotPrime")
+
+: 
+:     st_view(lnewslnews=.,.,"lnewslnews")
+
+:     st_view(lnewsnnews=.,.,"lnewsnnews")
+
+:     st_view(nnewslnews=.,.,"nnewslnews")
+
+:     st_view(nnewsnnews=.,.,"nnewsnnews")
+
+:     st_view(lsi=.,.,"lsi")
+
+:     st_view(siXlnln=.,.,"siXlnln")
+
+:     st_view(siXlnnn=.,.,"siXlnnn")
+
+:     st_view(siXnnln=.,.,"siXnnln")
+
+:     st_view(siXnnnn=.,.,"siXnnnn")
+
+:     st_view(lnewstot=.,.,"lnewstot")
+
+:     st_view(nnewstot=.,.,"nnewstot")
+
+:     st_view(l_ACS_HH=.,.,"l_ACS_HH")
+
+:     st_view(nnewsn=.,.,"nnewsn")
+
+:     st_view(lnewsn=.,.,"lnewsn")
+
+:     st_view(otherln=.,.,"otherln")
+
+:     st_view(othercn=.,.,"othercn")
+
+: end
+---------------------------------------------------------------
+
+. 
+. mata: 
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+:     struct dynoInfo {
+>         real matrix lnewslnews, lnewsnnews, nnewslnews, nnews
+> nnews, lsi,
+>             siXlnln, siXlnnn, siXnnln, siXnnnn, lnewstot, nne
+> wstot, l_ACS_HH,
+>             lnewsn,otherln,nnewsn,othercn
+>     }
+
+:     
+:     struct dynoInfo dynoInfoInit(real matrix lnewslnews, lnew
+> snnews, nnewslnews, nnewsnnews,
+>         lsi,siXlnln, siXlnnn,siXnnln, siXnnnn, lnewstot, nnew
+> stot,l_ACS_HH,lnewsn,otherln,nnewsn,othercn)
+>     {
+>         struct dynoInfo scalar Dy
+>     
+>         Dy.lnewslnews=lnewslnews
+>         Dy.lnewsnnews=lnewsnnews
+>         Dy.nnewslnews=nnewslnews
+>         Dy.nnewsnnews=nnewsnnews
+>         Dy.lsi=lsi
+>         Dy.siXlnln=siXlnln
+>         Dy.siXlnnn=siXlnnn
+>         Dy.siXnnln=siXnnln
+>         Dy.siXnnnn=siXnnnn
+>         Dy.lnewstot=lnewstot
+>         Dy.nnewstot=nnewstot
+>         Dy.l_ACS_HH=l_ACS_HH
+>         Dy.lnewsn=lnewsn
+>         Dy.otherln=otherln
+>         Dy.nnewsn=nnewsn
+>         Dy.othercn=othercn
+>         return(Dy)
+>     }
+
+: end
+---------------------------------------------------------------
+
+. 
+. mata:
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+:     Dy=dynoInfoInit(lnewslnews, lnewsnnews, nnewslnews, nnews
+> nnews,
+>         lsi,siXlnln, siXlnnn,siXnnln, siXnnnn, lnewstot, nnew
+> stot,l_ACS_HH,
+>         lnewsn,otherln,nnewsn,othercn)
+
+: end
+---------------------------------------------------------------
+
+. 
+. mata:
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+:    struct priceInfo {
+>         real matrix y,lnewst,otherlt,nnewst,lnviewt,l_ACS_HHt
+> ,id,mt,m
+>     }
+
+:     struct priceInfo priceInfoInit(y,lnewst,otherlt,nnewst,ln
+> viewt,l_ACS_HHt,id,mt,m)
+>     {
+>         struct priceInfo scalar pInfo
+>     
+>         pInfo.y=y
+>         pInfo.lnewst=lnewst
+>         pInfo.otherlt=otherlt
+>         pInfo.nnewst=nnewst
+>         pInfo.lnviewt=lnviewt
+>         pInfo.id=id
+>         pInfo.mt=mt
+>         pInfo.m=m
+>         pInfo.l_ACS_HHt=l_ACS_HHt
+>     return(pInfo)
+>     }
+
+: end
+---------------------------------------------------------------
+
+. 
+. mata: 
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+:         mata matuse MataPriceData
+(loading idt[3738,1], l_ACS_HHt[3738,1], lnewst[3738,1],
+ lnppst[3738,1], lnviewt[3738,1], mat[101,2], mtt[3738,1],
+ nnewst[3738,1], otherlt[3738,1])
+
+:         P=priceInfoInit(lnppst,lnewst,otherlt,nnewst,lnviewt,
+> l_ACS_HHt,idt,mtt,mat)
+
+: end
+---------------------------------------------------------------
+
+. 
+. mata:
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+:         mata matuse gsAndus, replace
+(loading NashW[99732,20], Up[99732,20], Upb[99732,20],
+ Upg[99732,20], Upre1[99732,20], Upre1g[99732,20],
+ Upre2[99732,20], Upre2g[99732,20], Uv[99732,20],
+ Uvg[99732,20], Uvre1[99732,20], Uvre1g[99732,20],
+ Uvre2[99732,20], Uvre2g[99732,20], Uvsg[99732,20],
+ Uvsi[99732,20], Uvso[99732,20], Vup[99732,20], id[99732,1],
+ market[99732,1], mt[99732,1], weights1[99732,1],
+ weights2[99732,1])
+
+: end
+---------------------------------------------------------------
+
+. 
+. mata
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+:         st_view(game=.,.,"game")
+
+:         st_view(stationid=.,.,"stationid")
+
+:         st_view(Mpop=.,.,"ACS_HH")
+
+:         st_view(si=.,.,"si")    
+
+:         NashW=select(NashW,game)
+
+:         _editmissing(NashW,0)
+
+:         Up=select(Up,game)
+
+:         Upb=select(Upb,game)
+
+:         Upg=select(Upg,game)
+
+:         Uvsi=select(Uvsi,game)
+
+:         Uvsg=select(Uvsg,game)
+
+:         Uvso=select(Uvso,game)
+
+:         Uv=select(Uv,game)
+
+:         Uvg=select(Uvg,game)
+
+:         Uvre1=select(Uvre1,game)
+
+:         Uvre2=select(Uvre2,game)
+
+:         Upre1=select(Upre1,game)
+
+:         Upre2=select(Upre2,game)
+
+:         weights1=select(weights1,game)
+
+:         weights2=select(weights2,game)
+
+:         Uvre1g=select(Uvre1g,game)
+
+:         Uvre2g=select(Uvre2g,game)
+
+:         Upre1g=select(Upre1g,game)
+
+:         Upre2g=select(Upre2g,game)
+
+:         Mpop=select(Mpop,game)
+
+:         lnewsPrime=select(lnewsPrime,game)
+
+:         nnewsPrime=select(nnewsPrime,game)
+
+:         otherlPrime=select(otherlPrime,game)
+
+:         lnewslnewsPrime=select(lnewslnewsPrime,game)
+
+:         _editmissing(lnewslnewsPrime,0)
+
+:         lnewsnnewsPrime=select(lnewsnnewsPrime,game)
+
+:         _editmissing(lnewsnnewsPrime,0)
+
+:         nnewslnewsPrime=select(nnewslnewsPrime,game)
+
+:         _editmissing(nnewslnewsPrime,0)
+
+:         nnewsnnewsPrime=select(nnewsnnewsPrime,game)
+
+:         _editmissing(nnewsnnewsPrime,0)
+
+:         lsiPrime=select(lsiPrime,game)
+
+:         _editmissing(lsiPrime,0)
+
+:         siXlnlnPrime=select(siXlnlnPrime,game)
+
+:         _editmissing(siXlnlnPrime,0)                    /*The
+> se all need to be fixed */
+
+:         siXlnnnPrime=select(siXlnnnPrime,game)
+
+:         _editmissing(siXlnnnPrime,0)
+
+:         siXnnlnPrime=select(siXnnlnPrime,game)
+
+:         _editmissing(siXnnlnPrime,0)
+
+:         siXnnnnPrime=select(siXnnnnPrime,game)
+
+:         _editmissing(siXnnnnPrime,0)
+
+:         lnewstotPrime=select(lnewstotPrime,game)
+
+:         nnewstotPrime=select(nnewstotPrime,game)
+
+:         l_ACS_HHPrime=select(l_ACS_HH,game)
+
+: end
+---------------------------------------------------------------
+
+. 
+. mata:   
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+:         struct gsAndws {
+>                 real matrix NashW,Up,Upb,Upg,Uv,Uvg,Uvsi,Uvsg
+> ,Uvso,
+>                         lnewsPrime,otherlPrime,nnewsPrime,
+>                         lnewslnewsPrime,lnewsnnewsPrime,nnews
+> lnewsPrime,
+>                         nnewsnnewsPrime,lsiPrime,siXlnlnPrime
+> ,siXlnnnPrime,
+>                         siXnnlnPrime,siXnnnnPrime,lnewstotPri
+> me,nnewstotPrime,
+>                         Uvre1,Uvre2,Upre1,Upre2,weights1,weig
+> hts2,Uvre1g,Uvre2g,Upre1g,Upre2g,lnview,l_ACS_HH   
+>         }
+
+:         struct gsAndws gsAndwsInit(NashW,Up,Upb,Upg,Uv,Uvg,Uv
+> si,Uvsg,Uvso,
+>                 lnewsPrime,otherlPrime,nnewsPrime,lnewslnewsP
+> rime,
+>                 lnewsnnewsPrime,nnewslnewsPrime,nnewsnnewsPri
+> me,lsiPrime,siXlnlnPrime,
+>                 siXlnnnPrime,siXnnlnPrime,siXnnnnPrime,lnewst
+> otPrime,nnewstotPrime,Uvre1,Uvre2,Upre1,Upre2,weights1,weight
+> s2,
+>                 Uvre1g,Uvre2g,Upre1g,Upre2g,lnview,l_ACS_HH)
+>         {       
+>                 struct gsAndws scalar GW
+>         
+>                 GW.NashW=NashW
+>                 GW.Up=Up
+>                 GW.Upb=Upb
+>                 GW.Upg=Upg
+>                 GW.Uv=Uv
+>                 GW.Uvg=Uvg
+>                 GW.Uvsi=Uvsi
+>                 GW.Uvsg=Uvsg
+>                 GW.Uvso=Uvso
+>                 GW.lnewsPrime=lnewsPrime
+>                 GW.otherlPrime=otherlPrime
+>                 GW.nnewsPrime=nnewsPrime
+>                 GW.lnewslnewsPrime=lnewslnewsPrime
+>                 GW.lnewsnnewsPrime=lnewsnnewsPrime
+>                 GW.nnewslnewsPrime=nnewslnewsPrime
+>                 GW.nnewsnnewsPrime=nnewsnnewsPrime
+>                 GW.lsiPrime=lsiPrime
+>                 GW.siXlnlnPrime=siXlnlnPrime
+>                 GW.siXlnnnPrime=siXlnnnPrime
+>                 GW.siXnnlnPrime=siXnnlnPrime
+>                 GW.siXnnnnPrime=siXnnnnPrime
+>                 GW.lnewstotPrime=lnewstotPrime
+>                 GW.nnewstotPrime=nnewstotPrime
+>                 GW.Uvre1=Uvre1
+>                 GW.Uvre2=Uvre2
+>                 GW.Upre1=Upre1
+>                 GW.Upre2=Upre2
+>                 GW.weights1=weights1
+>                 GW.weights2=weights2
+>                 GW.Uvre1g=Uvre1g
+>                 GW.Uvre2g=Uvre2g
+>                 GW.Upre1g=Upre1g
+>                 GW.Upre2g=Upre2g
+>                 GW.lnview=lnview
+>                 GW.l_ACS_HH=l_ACS_HH
+>         return(GW)
+> }       
+
+: end     
+---------------------------------------------------------------
+
+. 
+. mata:
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+:         GW=gsAndwsInit(NashW,Up,Upb,Upg,Uv,Uvg,Uvsi,Uvsg,Uvso
+> ,
+>                 lnewsPrime,otherlPrime,nnewsPrime,lnewslnewsP
+> rime,
+>                 lnewsnnewsPrime,nnewslnewsPrime,nnewsnnewsPri
+> me,lsiPrime,siXlnlnPrime,
+>                 siXlnnnPrime,siXnnlnPrime,siXnnnnPrime,lnewst
+> otPrime,nnewstotPrime,Uvre1,Uvre2,Upre1,Upre2,weights1,weight
+> s2,
+>                 Uvre1g,Uvre2g,Upre1g,Upre2g,ln(Uvsi:*Mpop),l_
+> ACS_HHPrime)       
+
+: end
+---------------------------------------------------------------
+
+. 
+. 
+. mata:
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+: void logLikelihoodPriceViewComplete(M,todo,b,lnf,g,H)
+> {
+>         real scalar valPrice,valView,valSelect,mu_l,mu_o,
+>                         mu_n,mu_c,eta_l,eta_o,
+>                         eta_n,sd_stav,sd_marv,sd_modv,
+>                         alphav,nu_l,nu_o,nu_n,gamma_l,gamma_o
+> ,
+>                         sd_stap,sd_marp,sd_modp,alphap
+> 
+>         struct dynoInfo Dy
+>         struct priceInfo scalar P
+>         struct gsAndws scalar GW
+>         
+>         mu_l=(moptimize_util_xb(M,b,1))^2
+>         mu_o=(moptimize_util_xb(M,b,2))^2
+>         mu_n=(moptimize_util_xb(M,b,3))^2
+>         mu_c=(moptimize_util_xb(M,b,4))^2
+>         eta_l=moptimize_util_xb(M,b,5)
+>         eta_o=moptimize_util_xb(M,b,6)
+>         eta_n=moptimize_util_xb(M,b,7)
+>         eta_ll=moptimize_util_xb(M,b,8)
+>         eta_ln=moptimize_util_xb(M,b,9)
+>         eta_nl=moptimize_util_xb(M,b,10)
+>         eta_nn=moptimize_util_xb(M,b,11)
+>         lam_own=moptimize_util_xb(M,b,12)
+>         lam_ll=moptimize_util_xb(M,b,13)
+>         lam_ln=moptimize_util_xb(M,b,14)
+>         lam_nl=moptimize_util_xb(M,b,15)
+>         lam_nn=moptimize_util_xb(M,b,16)
+>         rho_l=moptimize_util_xb(M,b,17)
+>         rho_n=moptimize_util_xb(M,b,18)
+>         omega=moptimize_util_xb(M,b,19)
+>         zeta_l=moptimize_util_xb(M,b,20)
+>         zeta_o=moptimize_util_xb(M,b,21)
+>         zeta_n=moptimize_util_xb(M,b,22)
+>         zeta_c=moptimize_util_xb(M,b,23)
+>         sd_stav=exp(moptimize_util_xb(M,b,24))
+>         sd_marv=exp(moptimize_util_xb(M,b,25))
+>         sd_modv=exp(moptimize_util_xb(M,b,26))  
+>         alphav=moptimize_util_xb(M,b,27)        
+>         nu_l=moptimize_util_xb(M,b,28)
+>         nu_o=moptimize_util_xb(M,b,29)
+>         nu_n=moptimize_util_xb(M,b,30)
+>         gamma_l=moptimize_util_xb(M,b,31)
+>         gamma_o=moptimize_util_xb(M,b,32)
+>         omegap=moptimize_util_xb(M,b,33)
+>         sd_stap=exp(moptimize_util_xb(M,b,34))
+>         sd_marp=exp(moptimize_util_xb(M,b,35))
+>         sd_modp=exp(moptimize_util_xb(M,b,36))
+>         alphap=moptimize_util_xb(M,b,37)        
+>         
+>         id=moptimize_util_userinfo(M,1)
+>         mt=moptimize_util_userinfo(M,2)
+>         m =moptimize_util_userinfo(M,3)
+>         Dy =moptimize_util_userinfo(M,4)
+>         P=moptimize_util_userinfo(M,5)
+>         GW=moptimize_util_userinfo(M,6)
+>         si=moptimize_util_userinfo(M,7)
+>         
+>         y    =moptimize_util_depvar(M,1)
+>         lnswg=moptimize_util_depvar(M,2)
+>         lnews=moptimize_util_depvar(M,3)
+>         otherl=moptimize_util_depvar(M,4)
+>         nnews=moptimize_util_depvar(M,5)
+>         otherc=moptimize_util_depvar(M,6)
+>         
+>         valPrice=logLikelihoodPriceVal(P.y,P.lnewst,P.otherlt
+> ,P.nnewst,P.lnviewt,P.l_ACS_HHt,P.id,P.mt,P.m,
+>                 nu_l,nu_o,nu_n,gamma_l,gamma_o,omegap,sd_stap
+> ,sd_marp,sd_modp,alphap)
+>         valView =logLikelihoodViewValDyna(y,lnswg,lnews,other
+> l,nnews,otherc,id,mt,m,
+>                 mu_l,mu_o,mu_n,mu_c,eta_l,eta_o,eta_n,eta_ll,
+> eta_ln,eta_nl,eta_nn,lam_own,lam_ll,lam_ln,
+>                 lam_nl,lam_nn,rho_l,rho_n,omega,zeta_l,zeta_o
+> ,zeta_n,zeta_c,sd_stav,sd_marv,sd_modv,alphav,Dy,si)
+>         
+>         betaV=eta_l,eta_o,eta_n,
+>                 eta_ll,eta_ln,eta_nl,eta_nn,lam_own,lam_ll,
+>                 lam_ln,lam_nl,lam_nn,rho_l,rho_n,omega,alphav
+>                 
+>         mus=mu_l,mu_o,mu_n,mu_c
+> 
+>         /* Now just need to use the other stuff. */
+>         
+>         betaP=nu_l,nu_o,nu_n,gamma_l,gamma_o,omegap,alphap
+>         
+>         valSelect=selectStuff(mus,betaV,betaP,sd_stav,sd_marv
+> ,sd_modv,sd_stap,sd_marp,sd_modp,GW)
+>         lnf=valPrice+valView+valSelect
+>         if (runiform(1,1)>.95) {
+>                 lnf,valSelect
+>                 mus
+>                 betaV
+>                 betaP
+>                 sd_stav,sd_marv,sd_modv
+>                 sd_stap,sd_marp,sd_modp
+>         }
+> }
+note: argument todo unused
+note: argument g unused
+note: argument H unused
+
+: end
+---------------------------------------------------------------
+
+. 
+. mata
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+: real scalar logLikelihoodPriceVal(y,lnewst,otherlt,nnewst,lnv
+> iewt,l_ACS_HH,id,mt,m,
+>                                   nu_l,nu_o,nu_n,gamma_l,gamm
+> a_o,omegap,sdstap,
+>                                   sdmarp,sdmodp,alphap)
+> {
+>         real scalar i,T,N,lam1,lam2,lam3,lam4,phi22,phi32
+>         real matrix X,mtp,idp,yp,Xp,Jn,Jt,En,Et,
+>                 Q1,Q2,Q3,Q4,OmegaInv,beta
+> 
+>         beta=nu_l,nu_o,nu_n,gamma_l,gamma_o,omegap,alphap
+> 
+>         X=lnewst:*lnviewt,otherlt:*lnviewt,nnewst:*lnviewt,
+>                 lnewst,otherlt,l_ACS_HH,J(rows(lnewst),1,1)
+> 
+>         lnf=J(rows(m),1,.)
+>         for (i=1;i<=rows(m);i++) {
+>                 mtp=panelsubmatrix(mt,i,m)
+>                 idp=panelsubmatrix(id,i,m)
+>                 T=rows(uniqrows(mtp))
+>                 N=rows(uniqrows(idp))
+>                 yp=panelsubmatrix(y,i,m)
+>                 Xp=panelsubmatrix(X,i,m)
+>         
+>                 lam1=sdmodp^2
+>                 lam2=T*sdstap^2+sdmodp^2
+>                 lam3=N*sdmarp^2+sdmodp^2
+>                 lam4=T*sdstap^2+N*sdmarp^2+sdmodp^2
+>                 phi22=sdmodp^2/lam2
+>                 phi32=sdmodp^2/lam3
+>                 phi42=sdmodp^2/lam4
+> 
+>                 Jn=J(N,N,1/N)
+>                 Jt=J(T,T,1/T)
+>                 En=I(N)-Jn
+>                 Et=I(T)-Jt
+> 
+>                 Q1=En#Et
+>                 Q2=En#Jt
+>                 Q3=Jn#Et
+>                 Q4=Jn#Jt
+>                 OmegaInv=(Q1/lam1+Q2/lam2+Q3/lam3+Q4/lam4)
+>                 lnDetOmega=-2*N*T*ln(sdmodp)+(N-1)*ln(phi22)+
+> (T-1)*ln(phi32)+ln(phi42)
+>                 lnf[i]=1/2*lnDetOmega-1/2*(yp-Xp*beta')'*Omeg
+> aInv*(yp-Xp*beta')
+>         }
+>         
+>         if (hasmissing(lnf)) lnf=.
+>         else lnf=colsum(lnf)
+>         return(lnf)
+> }
+
+: end
+---------------------------------------------------------------
+
+. 
+. mata:
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+: real scalar logLikelihoodViewValDyna(y,lnswg,lnews,otherl,nne
+> ws,otherc,id,mt,m,
+>                                  mu_l,mu_o,mu_n,mu_c,eta_l,et
+> a_o,eta_n,eta_ll,eta_ln,
+>                                  eta_nl,eta_nn,lam_own,lam_ll
+> ,lam_ln,lam_nl,lam_nn,
+>                                  rho_l,rho_n,omega,zeta_l,zet
+> a_o,zeta_n,zeta_c,sdsta,sdmar,sdmod,alpha,struct dynoInfo Dy,
+>  
+>                                  si)
+> {
+>         real scalar i,T,N,lam1,lam2,lam3,lam4,phi22,phi32
+>         real matrix X,mtp,idp,yp,Xp,Jn,Jt,En,Et,
+>                 Q1,Q2,Q3,Q4,OmegaInv,beta,lnDefF,muVec,sip,Bi
+> p,
+>                 siz,Biz,TimeVars,sg,Ng
+>         
+>         beta=mu_l,mu_o,mu_n,mu_c,eta_l,eta_o,eta_n,eta_ll,eta
+> _ln,
+>                 eta_nl,eta_nn,lam_own,lam_ll,lam_ln,lam_nl,la
+> m_nn,
+>                 rho_l,rho_n,omega,zeta_l,zeta_o,zeta_n,zeta_c
+> ,alpha
+> 
+>         X=lnews:*lnswg,otherl:*lnswg,nnews:*lnswg,otherc:*lns
+> wg,
+>                 lnews,otherl,nnews,Dy.lnewslnews,Dy.lnewsnnew
+> s,Dy.nnewslnews,
+>                 Dy.nnewsnnews,Dy.lsi,Dy.siXlnln,Dy.siXlnnn,Dy
+> .siXnnln,Dy.siXnnnn,
+>                 Dy.lnewstot,Dy.nnewstot,Dy.l_ACS_HH,Dy.lnewsn
+> ,Dy.otherln,Dy.nnewsn,Dy.othercn,J(rows(lnews),1,1)
+> 
+>         B=lnews,otherl,nnews,otherc
+> 
+>         lnf=J(rows(m),1,.)
+>         lnDetF=J(rows(m),6,.)
+>         muVec=mu_l,mu_o,mu_n,mu_c
+>         
+>         
+>         for (i=1;i<=rows(m);i++) {
+>                 mtp=panelsubmatrix(mt,i,m)
+>                 idp=panelsubmatrix(id,i,m)
+>                 T=rows(uniqrows(mtp))
+>                 N=rows(uniqrows(idp))
+>                 yp=panelsubmatrix(y,i,m)
+>                 Xp=panelsubmatrix(X,i,m)
+>                 sip=panelsubmatrix(si,i,m)
+>                 Bp=panelsubmatrix(B,i,m)
+>                 
+>                 lam1=sdmod^2
+>                 lam2=T*sdsta^2+sdmod^2
+>                 lam3=N*sdmar^2+sdmod^2
+>                 lam4=T*sdsta^2+N*sdmar^2+sdmod^2
+>                 phi22=sdmod^2/lam2
+>                 phi32=sdmod^2/lam3
+>                 phi42=sdmod^2/lam4
+> 
+>                 Jn=J(N,N,1/N)
+>                 Jt=J(T,T,1/T)
+>                 En=I(N)-Jn
+>                 Et=I(T)-Jt
+> 
+>                 Q1=En#Et
+>                 Q2=En#Jt
+>                 Q3=Jn#Et
+>                 Q4=Jn#Jt
+>                 OmegaInv=(Q1/lam1+Q2/lam2+Q3/lam3+Q4/lam4)
+>                 lnDetOmega=-2*N*T*ln(sdmod)+(N-1)*ln(phi22)+(
+> T-1)*ln(phi32)+ln(phi42)
+>                 lnf[i]=1/2*lnDetOmega-1/2*(yp-Xp*beta')'*Omeg
+> aInv*(yp-Xp*beta')
+>                 
+>                 TimeVars=uniqrows(mtp)  
+> 
+>                 for (z=1;z<=rows(TimeVars);z++) {
+>                         siz=select(sip,mtp:==TimeVars[z])
+>                         Bz=select(Bp,mtp:==TimeVars[z])
+>                         sizBz=siz:*Bz
+>                         sg=colsum(sizBz)
+>                         Ng=colsum(sizBz:!=0)
+>         
+>                         lnDetF[i,z]=rowsum((Ng:>0):*(Ng:-1):*
+> ln(1:-muVec))
+>                 }                       
+>                 
+>         }
+>         if (hasmissing(lnf)) lnf=.
+>         else if (hasmissing(lnDetF)) lnf=.
+>         else lnf=colsum(lnf) +colsum(rowsum(lnDetF))
+>         return(lnf)
+> }
+note: variable lnDefF unused
+note: variable Bip unused
+note: variable Biz unused
+note: variable sg set but not used
+
+: end
+---------------------------------------------------------------
+
+. 
+. mata:
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+: real scalar selectStuff(mus,betaV,betaP,sd_stav,sd_marv,sd_mo
+> dv,sd_stap,sd_marp,sd_modp,struct gsAndws GW)
+> {
+> 
+>         Xv=GW.lnewsPrime,GW.otherlPrime,GW.nnewsPrime,
+>                 GW.lnewslnewsPrime,GW.lnewsnnewsPrime,GW.nnew
+> slnewsPrime,
+>                 GW.nnewsnnewsPrime,GW.lsiPrime,GW.siXlnlnPrim
+> e,GW.siXlnnnPrime,
+>                 GW.siXnnlnPrime,GW.siXnnnnPrime,GW.lnewstotPr
+> ime,GW.nnewstotPrime,GW.l_ACS_HH,
+>                 J(rows(GW.lnewsPrime),1,1)
+> 
+> 
+>         mug=GW.lnewsPrime:*mus[1]:+GW.otherlPrime:*mus[2]:+GW
+> .nnewsPrime:*mus[3]:+
+>                 (1:-GW.lnewsPrime:-GW.otherlPrime:-GW.nnewsPr
+> ime):*mus[4]
+> 
+>         lnsig=ln(GW.Uvsi:/GW.Uvsg)      
+>         
+>         lnvMg=lnnd(GW.Uv,Xv*betaV':+GW.Uvre1:+GW.Uvre2,ln(sd_
+> modv)):-GW.Uvg:-ln(1:/(1:-mug):-mug:*GW.Uvsi:/GW.Uvsg:-GW.Uvs
+> i):-
+>                 GW.Uvre1g:-GW.Uvre2g:+GW.weights1:*lnnd(GW.Uv
+> re1,0,ln(sd_stav)):+GW.weights2:*lnnd(GW.Uvre2,0,ln(sd_marv))
+>       
+>                      /* This might be wrong - no need for lns
+> ig */
+> 
+>         betaXp=J(rows(GW.Uv),cols(GW.Uv),.)
+>         for (s=1;s<=cols(GW.Uv);s++) {
+>                 Xp=GW.lnewsPrime:*GW.lnview[,s],GW.otherlPrim
+> e:*GW.lnview[,s],GW.nnewsPrime:*GW.lnview[,s],
+>                         GW.lnewsPrime,GW.otherlPrime,GW.l_ACS
+> _HH,J(rows(GW.lnewsPrime),1,1)
+>                 betaXp[,s]=Xp*betaP'
+>         }
+> 
+>         lnpMg=lnnd(GW.Up,betaXp:+GW.Upre1:+GW.Upre2,ln(sd_mod
+> p)):-ln(normal((GW.Upb:-betaXp:-GW.Upre1:-GW.Upre2):/sd_modp)
+> ):-GW.Upg:-GW.NashW:-GW.Upre1g:-      /* Changed to a plus, p
+> robably wrongly */
+>                 GW.Upre2g +GW.weights1:*lnnd(GW.Upre1,0,ln(sd
+> _stap)):+GW.weights2:*lnnd(GW.Upre2,0,ln(sd_marp)) /* Questio
+> n is whether or not GW.Upg contains truncation information or
+>  not */
+> 
+>         maxP=rowmax(lnpMg)
+>         maxV=rowmax(lnvMg)
+> 
+>         lnp=ln(rowsum(exp(lnpMg:-maxP))):+maxP:-ln(cols(lnpMg
+> ))         
+>         lnv=ln(rowsum(exp(lnvMg:-maxV))):+maxV:-ln(cols(lnvMg
+> ))
+> 
+>         //if (hasmissing(lnp)) colmissing(lnp)
+> //      if (hasmissing(lnv)) printf("Danger!\n")
+>         return(colsum(lnv):+colsum(lnp))
+> }
+note: variable lnsig set but not used
+
+: end
+---------------------------------------------------------------
+
+. 
+. do MataFunctions\lnnd.do
+
+. mata
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+:     real matrix lnnd(y,m,lnsd) return(-(y:-m):^2:/(2:*exp(lns
+> d):^2):-ln(2*pi())/2:-lnsd)   
+
+: end
+---------------------------------------------------------------
+
+. 
+end of do-file
+
+. 
+.         mata:
+------------------------------------------------- mata (type en
+> d to exit) --------------------------------------------------
+:         
+:         Z=moptimize_init()
+
+:         moptimize_init_trace_dots(Z,"on")
+
+:         moptimize_init_trace_params(Z,"on")
+
+:         moptimize_init_evaluator(Z,&logLikelihoodPriceViewCom
+> plete())   /* Note that this is different when using mcmc */
+
+:         moptimize_init_evaluatortype(Z,"d0")                 
+>            /* Changed to a d0-type evaluator */
+
+:         moptimize_init_which(Z,"max")
+
+: 
+:         moptimize_init_eq_indepvars(Z,1,"")     
+
+:         moptimize_init_eq_indepvars(Z,2,"")     
+
+:         moptimize_init_eq_indepvars(Z,3,"")     
+
+:         moptimize_init_eq_indepvars(Z,4,"")     
+
+:         moptimize_init_eq_indepvars(Z,5,"")     
+
+:         moptimize_init_eq_indepvars(Z,6,"")     
+
+:         moptimize_init_eq_indepvars(Z,7,"")     
+
+:         moptimize_init_eq_indepvars(Z,8,"")     
+
+:         moptimize_init_eq_indepvars(Z,9,"")     
+
+:         moptimize_init_eq_indepvars(Z,10,"")
+
+:         moptimize_init_eq_indepvars(Z,11,"")
+
+:         moptimize_init_eq_indepvars(Z,12,"")
+
+:         moptimize_init_eq_indepvars(Z,13,"")
+
+:         moptimize_init_eq_indepvars(Z,14,"")
+
+:         moptimize_init_eq_indepvars(Z,15,"")
+
+:         moptimize_init_eq_indepvars(Z,16,"")
+
+:         moptimize_init_eq_indepvars(Z,17,"")
+
+:         moptimize_init_eq_indepvars(Z,18,"")
+
+:         moptimize_init_eq_indepvars(Z,19,"")
+
+:         moptimize_init_eq_indepvars(Z,20,"")
+
+:         moptimize_init_eq_indepvars(Z,21,"")
+
+:         moptimize_init_eq_indepvars(Z,22,"")
+
+:         moptimize_init_eq_indepvars(Z,23,"")
+
+:         moptimize_init_eq_indepvars(Z,24,"")
+
+:         moptimize_init_eq_indepvars(Z,25,"")
+
+:         moptimize_init_eq_indepvars(Z,26,"")
+
+:         moptimize_init_eq_indepvars(Z,27,"")
+
+:         moptimize_init_eq_indepvars(Z,28,"")
+
+:         moptimize_init_eq_indepvars(Z,29,"")
+
+:         moptimize_init_eq_indepvars(Z,30,"")
+
+:         moptimize_init_eq_indepvars(Z,31,"")    
+
+:         moptimize_init_eq_indepvars(Z,32,"")
+
+:         moptimize_init_eq_indepvars(Z,33,"")
+
+:         moptimize_init_eq_indepvars(Z,34,"")    
+
+:         moptimize_init_eq_indepvars(Z,35,"")
+
+:         moptimize_init_eq_indepvars(Z,36,"")    
+
+:         moptimize_init_eq_indepvars(Z,37,"")
+
+:         
+:         moptimize_init_depvar(Z,1,"dln")
+
+:         moptimize_init_depvar(Z,2,"ln_swg")
+
+:         moptimize_init_depvar(Z,3,"lnews")
+
+:         moptimize_init_depvar(Z,4,"otherl")
+
+:         moptimize_init_depvar(Z,5,"nnews")
+
+:         moptimize_init_depvar(Z,6,"otherc")
+
+: 
+:         st_view(ma=.,.,"market")
+
+:         st_view(id=.,.,"stationid")
+
+:         st_view(mt=.,.,"mt")
+
+:         
+:         m=panelsetup(ma,1)
+
+:         moptimize_init_userinfo(Z,1,id)
+
+:         moptimize_init_userinfo(Z,2,mt)
+
+:         moptimize_init_userinfo(Z,3,m)
+
+:         moptimize_init_userinfo(Z,4,Dy)
+
+:         moptimize_init_userinfo(Z,5,P)
+
+:         moptimize_init_userinfo(Z,6,GW)
+
+:         moptimize_init_userinfo(Z,7,si)
+
+:         moptimize_evaluate(Z)
+
+:         mata matuse betaPDynoStarts
+(loading bpo[1,10], drawsbpo[200,10])
+
+:         mata matuse DynoStarts23
+(loading arate[1,27], bo[1,27], drawsbo[100,27], vals[100,1])
+
+:         
+:         bv=bo,bpo
+
+:         Vstart=diag(sqrt(abs(bv)))
+
+:         
+:         alginfo="mwg","d0","moptimize"
+
+:         b_start=amcmc(alginfo,&logLikelihoodPriceViewComplete
+> (),bv,Vstart,401,1,1,.4,arate=.,vals=.,lambda=.,.,Z,"noisy")
+............                  1              2
+    +-------------------------------+
+  1 |    23652.6718   -4290.068803  |
+    +-------------------------------+
+                 1             2             3             4
+    +---------------------------------------------------------+
+  1 |   .183416217   .1503444159    .042968371   .0000204437  |
+    +---------------------------------------------------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   6.179894271       4.561714    4.630111866
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1     .1714525572    .5146284549    1.151625408
+     ----------------------------------------------
+                  7              8              9
+     ----------------------------------------------
+  1     .9503811842    .2196161156    .0749768426
+     ----------------------------------------------
+                 10             11             12
+     ----------------------------------------------
+  1     .2061804756    .0251937986     .107975577
+     ----------------------------------------------
+                 13             14             15
+     ----------------------------------------------
+  1    -6.706602221    -1.04245023   -.7143650014
+     ----------------------------------------------
+                 16
+     ----------------+
+  1    -.8372526237  |
+     ----------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   .6098037692    .7074609423    .2747033608
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1     -3.04958536   -3.663003633    .8766991616
+     ----------------------------------------------
+                  7
+     ----------------+
+  1    -12.48452332  |
+     ----------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |     .6608079   1.027490512   .3389742675  |
+    +-------------------------------------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |  .3745362519   .3174015067   .2916494003  |
+    +-------------------------------------------+
+..................................... 50: f(x) = 23981.7315
+................                 1             2
+    +-----------------------------+
+  1 |  23527.56538   -3666.84652  |
+    +-----------------------------+
+                 1             2             3             4
+    +---------------------------------------------------------+
+  1 |  .2079138401   .1503444159    .042968371   .0000204437  |
+    +---------------------------------------------------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   6.219720094    4.781108716    4.630111866
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1     .1714525572    .5243586017    1.394371787
+     ----------------------------------------------
+                  7              8              9
+     ----------------------------------------------
+  1     .9503811842    .2196161156    .0985322655
+     ----------------------------------------------
+                 10             11             12
+     ----------------------------------------------
+  1     .1431002076    .0251937986     .107975577
+     ----------------------------------------------
+                 13             14             15
+     ----------------------------------------------
+  1    -6.706602221    -.716723634   -.7143650014
+     ----------------------------------------------
+                 16
+     ----------------+
+  1    -.8372526237  |
+     ----------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   .6098037692    .7154930694     .390692068
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1    -2.779312176   -3.663003633    .8766991616
+     ----------------------------------------------
+                  7
+     ----------------+
+  1    -12.48452332  |
+     ----------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |  .7222647766   .9927053452   .3389742675  |
+    +-------------------------------------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |  .3745362519   .3174015067   .2916494003  |
+    +-------------------------------------------+
+...                  1              2
+    +-------------------------------+
+  1 |   19660.33058   -5871.903471  |
+    +-------------------------------+
+                 1             2             3             4
+    +---------------------------------------------------------+
+  1 |  .2079138401   .1503444159    .042968371   .0000204437  |
+    +---------------------------------------------------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   6.219720094    4.781108716    4.630111866
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1     .1714525572    .5243586017    1.394371787
+     ----------------------------------------------
+                  7              8              9
+     ----------------------------------------------
+  1     .9503811842    .2196161156    .0985322655
+     ----------------------------------------------
+                 10             11             12
+     ----------------------------------------------
+  1     .1431002076    .0251937986     .107975577
+     ----------------------------------------------
+                 13             14             15
+     ----------------------------------------------
+  1    -6.706602221    -.716723634   -.7143650014
+     ----------------------------------------------
+                 16
+     ----------------+
+  1    -.8372526237  |
+     ----------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   .6098037692    .7154930694    .2747033608
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1    -2.779312176   -3.612486142    .9641527891
+     ----------------------------------------------
+                  7
+     ----------------+
+  1    -12.48452332  |
+     ----------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |  .7222647766   .9927053452   .3389742675  |
+    +-------------------------------------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |  .3745362519   .3174015067   .2916494003  |
+    +-------------------------------------------+
+.............................. 100: f(x) = 24245.0104
+.......................                  1              2
+    +-------------------------------+
+  1 |   24021.71566   -3425.273533  |
+    +-------------------------------+
+                 1             2             3             4
+    +---------------------------------------------------------+
+  1 |  .2079138401   .1503444159    .042968371    .000010734  |
+    +---------------------------------------------------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   6.287419558    4.864233197    4.641252611
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1     .1871822653    .3463062367    1.372115526
+     ----------------------------------------------
+                  7              8              9
+     ----------------------------------------------
+  1     .9433050061    .2196161156    .1684289827
+     ----------------------------------------------
+                 10             11             12
+     ----------------------------------------------
+  1     .1431002076    .0251937986     .107975577
+     ----------------------------------------------
+                 13             14             15
+     ----------------------------------------------
+  1    -6.706602221    -.716723634   -.7142507037
+     ----------------------------------------------
+                 16
+     ----------------+
+  1    -.8372526237  |
+     ----------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   .6098037692    .7154930694    .3036175594
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1    -2.779312176   -3.612486142    .8766991616
+     ----------------------------------------------
+                  7
+     ----------------+
+  1    -12.38526051  |
+     ----------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |  .7222647766   .9670621876   .3389742675  |
+    +-------------------------------------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |  .3787058414   .3174015067   .2916494003  |
+    +-------------------------------------------+
+.                  1              2
+    +-------------------------------+
+  1 |   24347.16876   -3409.203464  |
+    +-------------------------------+
+                 1             2             3             4
+    +---------------------------------------------------------+
+  1 |  .2079138401   .1503444159    .042968371    .000010734  |
+    +---------------------------------------------------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   6.287419558    4.864233197    4.641252611
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1     .1871822653    .3463062367    1.372115526
+     ----------------------------------------------
+                  7              8              9
+     ----------------------------------------------
+  1     .9433050061    .2196161156    .0985322655
+     ----------------------------------------------
+                 10             11             12
+     ----------------------------------------------
+  1     .1020441184    .0251937986     .107975577
+     ----------------------------------------------
+                 13             14             15
+     ----------------------------------------------
+  1    -6.706602221    -.716723634   -.7142507037
+     ----------------------------------------------
+                 16
+     ----------------+
+  1    -.8372526237  |
+     ----------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   .6098037692    .7154930694    .3036175594
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1    -2.779312176   -3.612486142    .8766991616
+     ----------------------------------------------
+                  7
+     ----------------+
+  1    -12.38526051  |
+     ----------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |  .7222647766   .9670621876   .3389742675  |
+    +-------------------------------------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |  .3787058414   .3174015067   .2916494003  |
+    +-------------------------------------------+
+...........                  1              2
+    +-------------------------------+
+  1 |   24413.54915   -3383.724713  |
+    +-------------------------------+
+                 1             2             3             4
+    +---------------------------------------------------------+
+  1 |  .2079138401   .1503444159    .042968371    .000010734  |
+    +---------------------------------------------------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   6.287419558    4.864233197    4.641252611
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1     .1871822653    .3463062367    1.372115526
+     ----------------------------------------------
+                  7              8              9
+     ----------------------------------------------
+  1     .9433050061    .2196161156    .0985322655
+     ----------------------------------------------
+                 10             11             12
+     ----------------------------------------------
+  1     .1431002076    .0251937986     .107975577
+     ----------------------------------------------
+                 13             14             15
+     ----------------------------------------------
+  1     -6.74909567   -.4478394912   -.7142507037
+     ----------------------------------------------
+                 16
+     ----------------+
+  1    -.8372526237  |
+     ----------------+
+                  1              2              3
+    +----------------------------------------------
+  1 |   .6098037692    .7154930694    .3036175594
+    +----------------------------------------------
+                  4              5              6
+     ----------------------------------------------
+  1    -2.779312176   -3.612486142    .8766991616
+     ----------------------------------------------
+                  7
+     ----------------+
+  1    -12.38526051  |
+     ----------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |  .7222647766   1.019719701   .3389742675  |
+    +-------------------------------------------+
+                 1             2             3
+    +-------------------------------------------+
+  1 |  .3787058414   .3174015067   .2916494003  |
+    +-------------------------------------------+

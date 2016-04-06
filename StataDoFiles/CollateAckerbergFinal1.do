@@ -1,7 +1,8 @@
 // Trying to construct everything as we go - we will need to first create the data looping over panels
 
 clear all
-use "/user/mjbaker/TV/ad_sample/AveragedDataDyno.dta", clear
+cd C:\users\mjbaker\documents\github\newshour
+use ".AverageDataDynamicdta", clear
 quietly do "/user/mjbaker/TV/ad_sample/AveragedDataDynamicMataFinal1.do"
 set more off
 
