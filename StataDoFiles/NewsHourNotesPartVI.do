@@ -594,7 +594,7 @@ do MataFunctions\lnnd.do
 	alginfo="mwg","d0","moptimize"
 	b_start=amcmc(alginfo,&logLikelihoodPriceViewComplete(),bv,Vstart,401,1,1,.4,arate=.,vals=.,lambda=.,.,Z,"noisy")
 
-	mata matsave /user/mjbaker/TV/ad_sample/Results b_start, replace
+	mata matsave Results b_start vals lambda, replace
 end	
 
 

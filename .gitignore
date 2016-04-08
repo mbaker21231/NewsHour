@@ -52,6 +52,7 @@ Temporary Items
 # Stata Data files - we don't need other people reading these! Same for matrix files
 *.dta
 *.mmat
+*.log
 
 # Private python config files:
 mailconfig.py
