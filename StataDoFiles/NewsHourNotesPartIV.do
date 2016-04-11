@@ -44,7 +44,7 @@ mata:
     sdmarv=exp(bo[25])
     sdmodv=exp(bo[26])
     
-    draws=20
+    draws=5
 end
 
 do MataFunctions\MataReshape.do
@@ -193,7 +193,8 @@ do MataFunctions\sharemakers.do
 
 
 mata: 
-    for (c=1;c<=2;c++) {
+	BestJump = J(0,5,0)
+    for (c=1;c<=draws;c++) {
 		c
         for (i=1;i<=rows(mLong);i++) {
             gameMarkerp=panelsubmatrix(gameMarker,i,mLong)
@@ -257,7 +258,7 @@ mata:
                                 lnewsLongp[,t]:*ln(1:+totlnewsp),nnewsLongp[,t]:*ln(1:+totnnewsp),
                                 l_ACS_HHLongp[,t],lnewsnLongp[,t],otherlnLongp[,t],
                                 nnewsnLongp[,t],othercnLongp[,t],J(rows(lnewsLongp),1,1)
-							XVHolder = XVHolder \ XV	
+
                                 XBV=XV*betaDynoStart':+UvmtLongp[,counter+t-1]:+
                                     UvsLongp[,counter+t-1]:+UvmodObsLongp[,counter+t-1]
                                 if (lnewsHat[q,t]!=lnewsOrig[t]) {
@@ -273,6 +274,7 @@ mata:
                             sharesToPlace[q,t]=sharesP[place,]
                             soPlace[q,t]=1-sum(sharesP)
 
+		
                             slPlace=sum(lnewsLongp[,t]:*sharesP)
                             snPlace=sum(nnewsLongp[,t]:*sharesP)
                             solPlace=sum(otherlLongp[,t]:*sharesP)
@@ -290,7 +292,10 @@ mata:
                             nnewsLongLagp=nnewsLongp[,t]
                             otherlLongLagp=otherlLongp[,t]
                         }
-                        
+  						shoo = select(siLong,statIdLong:==pId)
+							
+						BestJump = BestJump \ (max(rowsum(sharesToPlace:-shoo)),pId,c,i,pId)
+						
                         asarray(sharesBcs,(pId,c,1),sharesToPlace)
                         asarray(sharesBcs,(pId,c,2),soPlace)
                         asarray(sharesBcs,(pId,c,3),sgPlace)
@@ -307,6 +312,10 @@ mata:
         counter=counter+timeslots
     }
 end
+
+
+/* Big conclusion ----- simulated unilateral deviations seem to be working okay... */
+/* Next part is the sampling weights for the viewership error terms. Here goes     */
 
 mata:
     uv      = J(rows(statIdLong),0,.)
@@ -325,6 +334,8 @@ end
 
 do MataFunctions\lnnd.do
 
+
+/* Why are we running this loop at this point? */
 
 mata:
     for (c=1;c<=draws;c++) {
@@ -379,7 +390,7 @@ mata:
                     ackToAddsg[idPos,t]=0
                 }
             }
-            
+   
             if (nnewsAct[1]!=1) {
                 sameButOneProfs=mm_which(lnewsAct[1]:!=lnewsHat[,1])
                 sameButOneProfs=min(sameButOneProfs)
@@ -402,9 +413,11 @@ mata:
                 ackToAddso[idPos,1]=0
                 ackToAddsg[idPos,1]=0
             }
+
             ackToAddre1[idPos,]=UvsLong[idPos,counter::counter+timeslots-1]
             ackToAddre2[idPos,]=UvmtLong[idPos,counter::counter+timeslots-1]
         }
+
         uv=uv,ackToAdd
         uvg=uvg,ackToAddg
         uvsi=uvsi,ackToAddsi
@@ -416,6 +429,8 @@ mata:
     }
 end
 
+/* the above are simply the sampling weights for the viewership model simulated terms. Some are large, but */
+/* it doesn't seem like things are really all that bad there...Do we ever get missing values? */
 
 mata:
     uvre1g=lnnd(uvre1,0,ln(sdstav)):*1:/rowsum(gameLong)    
@@ -438,6 +453,11 @@ mata:
             UpsLong[,i::i+timeslots-1]:-UpmtLong[,i::i+timeslots-1]
     }
 end
+
+/* Histogram of the above seems reasonable */
+/* We probably should include this in what we are doing... */
+
+/* Note the below code applies to 58, 61, 63, 171, 172,178,181, 183, etc. */
 
 mata:
     priceErrs=asarray_create("real",2)
@@ -538,13 +558,12 @@ mata:
                             allDraws=allDraws \ (d,i,marketIdLong[i],idp,t,max1-max2)
                             errPdraws[,t]=exp(bpo[9])*invnormal(runiform(1,1)*normal(Bound[t]/exp(bpo[9])))
                             if (errPdraws[,t]==.) {
-                                printf("+");displayflush();(d,idp,t)
+                                printf("+");displayflush();
                                 problem=1
                                 Troublers=Troublers \ (d,i,marketIdLong[i],idp,t,max1-max2)
                                 errPdraws[,t]=-20
                                 Bound[t]=-20
                                 Try++
-                                Try
                             }
 
                             uptoAdd[i,t]=actPayMean[rows(actPayMean),t]+errPdraws[,t]
@@ -562,7 +581,7 @@ mata:
                             vuptoAdd[i,t]=0
                         }
                     }
-                } while (problem==1 & Try<2)    /* See if it makes a difference here at all */
+                } while (problem==1 & Try<12)    /* See if it makes a difference here at all */
 
 
             asarray(priceErrs,(statIdLong[i],d),errPdraws)
