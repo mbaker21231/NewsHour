@@ -475,7 +475,7 @@ mata
 					for (t=1;t<=rows(keys);t++) Errsp[t,]=asarray(priceErrsR,(keys[t],d))
 
 					pricesTry=XBP:+(1:-errCheckp):*select(UpmodObsp,gameMarkerp):+errCheckp:*Errsp					
-					if (hasmissing(pricesTry)) printf("what the!")
+			//		if (hasmissing(pricesTry)) printf("what the!")
 					/* Now, a little block to compute surplus */
 					
 					errCheckp=select(errCheck,gameMarkerp)
