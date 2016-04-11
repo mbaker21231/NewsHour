@@ -1,4 +1,5 @@
-cd C:\Users\mjbaker\Documents\GitHub\NewsHour
+capture cd "C:\Users\Matthew Baker\Documents\GitHub\NewsHour"
+capture cd "C:\Users\mjbaker\Documents\GitHub\NewsHour"
 clear all
 use AveragedDataDyno.dta
 set more off
@@ -63,7 +64,7 @@ mata:
                 
     xBpUE=ln(siLong):-ln(1:-(slnewsLong:+snnewsLong:+sotherlLong:+sothercLong)):-
         bo[1]:*lnswgLong:*lnewsLong:-
-        bo[2]:*lnswgLong:*otherlLong-
+        bo[2]:*lnswgLong:*otherlLong:-
         bo[3]:*lnswgLong:*nnewsLong:-
         bo[4]:*lnswgLong:*othercLong
                 
@@ -97,7 +98,7 @@ mata:
         UvmtLong=UvmtLong,colshape(iev2[,i],timeslots)
     }
 
-    UvmodLong=invnormal(runiform(rows(lnewsLong),timeslots*draws))*sdmodv
+    UvmodLong=invnormal(runiform(rows(lnewsLong),timeslots*draws))*sdmodv:-2
 end
 
 mata:
@@ -192,7 +193,7 @@ do MataFunctions\sharemakers.do
 
 
 mata: 
-    for (c=1;c<=draws;c++) {
+    for (c=1;c<=2;c++) {
 		c
         for (i=1;i<=rows(mLong);i++) {
             gameMarkerp=panelsubmatrix(gameMarker,i,mLong)
@@ -256,7 +257,7 @@ mata:
                                 lnewsLongp[,t]:*ln(1:+totlnewsp),nnewsLongp[,t]:*ln(1:+totnnewsp),
                                 l_ACS_HHLongp[,t],lnewsnLongp[,t],otherlnLongp[,t],
                                 nnewsnLongp[,t],othercnLongp[,t],J(rows(lnewsLongp),1,1)
-
+							XVHolder = XVHolder \ XV	
                                 XBV=XV*betaDynoStart':+UvmtLongp[,counter+t-1]:+
                                     UvsLongp[,counter+t-1]:+UvmodObsLongp[,counter+t-1]
                                 if (lnewsHat[q,t]!=lnewsOrig[t]) {
