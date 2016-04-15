@@ -25,31 +25,33 @@ void PriceShareGenerator(real scalar cutT, cutFlagV, cutFlagP, real scalar place
 		usePErrs=J(rows(p),timeslots,0)
 		useVErrs=J(rows(p),timeslots,0)
      
-		usePErrs[,1::cutT-1]=J(rows(p),1,UpmodObz[1,1::cutT-1])
-		usePErrs[,cutT+cutFlagP::cols(usePErrs)]=
-			errMarker[p,cutT+1::cols(errPdraws)]:*UpmodObz[1,cutT+1::cols(errPdraws)]:+
-            (1:-errMarker[p,cutT+1::cols(errPdraws)]):*errPdraws[,cutT+1::cols(errPdraws)]
+		usePErrs[,1::cutT]=J(rows(p),1,UpmodObz[1,1::cutT])
+		usePErrs[,cutT::cols(usePErrs)]=
+			errMarker[p,cutT::cols(errPdraws)]:*UpmodObz[1,cutT::cols(errPdraws)]:+
+            (1:-errMarker[p,cutT::cols(errPdraws)]):*errPdraws[,cutT::cols(errPdraws)]
 			
-	    useVErrs[,1::cutT-1]=J(rows(p),1,UvmodObz[1,1::cutT-1])
-		useVErrs[,cutT+1::cols(useVErrs)]=
-			errMarker[p,cutT+1::cols(errVdraws)]:*UvmodObz[1,cutT+1::cols(errVdraws)]:+
-            (1:-errMarker[p,cutT+1::cols(errVdraws)]):*errVdraws[,cutT+1::cols(errVdraws)]		
+	    useVErrs[,1::cutT]=J(rows(p),1,UvmodObz[1,1::cutT])
+		useVErrs[,cutT::cols(useVErrs)]=
+			errMarker[p,cutT::cols(errVdraws)]:*UvmodObz[1,cutT::cols(errVdraws)]:+
+            (1:-errMarker[p,cutT::cols(errVdraws)]):*errVdraws[,cutT::cols(errVdraws)]		
     }
     else {
         p=mm_which(errMarker[,cutT]:==0)
 
 		usePErrs=J(rows(p),timeslots,0)
 		useVErrs=J(rows(p),timeslots,0)
-        usePErrs[,cutT+1::cols(usePErrs)]=
-			errMarker[p,cutT+1::cols(errPdraws)]:*UpmodObz[1,cutT+1::cols(errPdraws)]:+
-            (1:-errMarker[p,cutT+1::cols(errPdraws)]):*errPdraws[,cutT+1::cols(errPdraws)]
+        usePErrs[,cutT::cols(usePErrs)]=
+			errMarker[p,cutT::cols(errPdraws)]:*UpmodObz[1,cutT::cols(errPdraws)]:+
+            (1:-errMarker[p,cutT::cols(errPdraws)]):*errPdraws[,cutT::cols(errPdraws)]
 			
-        useVErrs[,cutT+1::cols(useVErrs)]=
-			errMarker[p,cutT+1::cols(errVdraws)]:*UpmodObz[1,cutT+1::cols(errVdraws)]:+
-            (1:-errMarker[p,cutT+1::cols(errVdraws)]):*errVdraws[,cutT+1::cols(errVdraws)]			
-			
-    }	
-	useVErrs
+        useVErrs[,cutT::cols(useVErrs)]=
+			errMarker[p,cutT::cols(errVdraws)]:*UvmodObz[1,cutT::cols(errVdraws)]:+
+            (1:-errMarker[p,cutT::cols(errVdraws)]):*errVdraws[,cutT::cols(errVdraws)]			
+   }	
+
+	if (cutFlagP == 1) usePErrs[,cutT]=J(rows(p),1,0)
+	if (cutFlagV == 1) useVErrs[,cutT]=J(rows(p),1,0)
+
 	Shares = J(rows(p),timeslots,0)
 
 	for (k=1;k<=rows(p);k++) {
@@ -107,7 +109,7 @@ void PriceShareGenerator(real scalar cutT, cutFlagV, cutFlagP, real scalar place
     actPayMean=(lnewsHat[p,]*bpo[1]:+otherlHat[p,]*bpo[2]:+nnewsHat[p,]*bpo[3]):*ln(popp:*Shares):+
         lnewsHat[p,]:*bpo[4]:+otherlHat[p,]*bpo[5]:+bpo[6]:*l_ACS_HHLongp[place,]:+bpo[10]:+
         UpsLongp[place,counter::counter+timeslots-1]:+UpmtLongp[place,counter::counter+timeslots-1]	
-	
+
 	lnewsLongp = phlnewsLongp
 	otherlLongp = photherlLongp
 	nnewsLongp = phnnewsLongp
@@ -137,8 +139,4 @@ end
 /* We also add a "switch" function, which modifies the cutT - this is so we can */
 /* use the above function both in the development of error terms and in the development */
 /* of bounds for the error terms. */
-   
- mata:
-	PriceShareGenerator(5,58,S=.,P=.)
-end
    

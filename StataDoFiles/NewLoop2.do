@@ -1,3 +1,5 @@
+/* Since the error drawer seems to be working, we now start a new file where we start to do some looping */
+
 mata: counter = 1
 
 /*for (c=1;c<=draws;c++) {*/
@@ -89,42 +91,43 @@ end
 /* Start with a very high error term and see if it is too high */
 
 mata:
-				t = 5
-				vBound[t] = 10
-				errVdraws[t] = vBound[t]
-				PriceShareGenerator(t, 0, 1, 58, S=., P=.)
-				check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t+1::timeslots])))
+				for (t=timeslots-1;t>=1;t--) {
+					vBound[t] = 10
+					errVdraws[t] = vBound[t]
+					PriceShareGenerator(t, 0, 1, 58, S=., P=.)
+					check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t+1::timeslots])))
 
-				if (check < 0) {
-					Up   = 10
-					Down = -10
-					Dist = (Up - Down) / 2
-					XX   = (Up + Down) / 2
-					its = 0
-					do {
-						Dist = Dist / 2
-						errVdraws[t]= XX					
-						PriceShareGenerator(t, 0, 1, 58, S=., P=.)
-						check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t+1::timeslots])))				
-						if (check < 0) {
-							XX = XX - Dist
-						}
-						else {
-							XX = XX + Dist
-						}
-						its++
-					} while (abs(check)>.01 & its < 20)
+					if (check < 0) {
+						Up   = 10
+						Down = -10
+						Dist = (Up - Down) / 2
+						XX   = (Up + Down) / 2
+						its = 0
+						do {
+							Dist = Dist / 2
+							errVdraws[t]= XX					
+							PriceShareGenerator(t, 0, 1, 58, S=., P=.)
+							check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t+1::timeslots])))				
+							if (check < 0) {
+								XX = XX - Dist
+							}
+							else {
+								XX = XX + Dist
+							}
+							its++
+						} while (abs(check)>.01 & its < 20)
 					vBound[t] = XX
+					}
+					errVdraws[t] = sdmodv*invnormal(normal(vBound[t])*runiform(1,1))
+					PriceShareGenerator(t, 0, 1, place, S=., P=.)
+					pBound[t] = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t::timeslots])))
+					errPdraws[t] = sdmodp*invnormal(normal(pBound[t])*runiform(1,1))
 				}
-				2
 end
 
 /* Once out of the loop, we can now draw values for the viewership error term for the truncated normal: */
 mata:
-		errVdraws[t] = sdmodv*invnormal(normal(vBound[t])*runiform(1,1))
-		PriceShareGenerator(t, 0, 1, place, S=., P=.)
-		pBound[t] = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t::timeslots])))
-		errPdraws[t] = sdmodp*invnormal(normal(pBound[t])*runiform(1,1))
+
 end
 
 				

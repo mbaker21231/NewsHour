@@ -1,16 +1,13 @@
+/* Since the error drawer seems to be working, we now start a new file where we start to do some looping */
+
 mata: counter = 1
 
-/*for (c=1;c<=draws;c++) {*/
 mata:
-
-	 c=1
-	/*for (i=1;i<=rows(mLong);i++) {*/
-		i=1
+for (c=1;c<=draws;c++) {
+	for (i=1;i<=rows(mLong);i++) {
 		gameMarkerp = panelsubmatrix(gameMarker,i,mLong)
 		playersp = colsum(gameMarkerp)
-		
-/*		if (playersp>0) { */
-		
+		if (playersp>0) { 
 			statIdLongp=panelsubmatrix(statIdLong,i,mLong)
             lnewsLongp=panelsubmatrix(lnewsLong,i,mLong)
             nnewsLongp=panelsubmatrix(nnewsLong,i,mLong)
@@ -34,12 +31,9 @@ mata:
 			popp = round(exp(max(l_ACS_HHLongp)))
 			
 			gameList = J(0,2,.)
-end			
-/*			for (k=1;k<=rows(nsToChange);k++) { */
 
-mata:
-				k=1
-
+			for (k=1;k<=rows(nsToChange);k++) { 		
+			i,k
 				pId = nsToChange[k]
 				gameList = gameList \ (pId,i)
 	            place=mm_which(statIdLongp:==pId)
@@ -62,7 +56,7 @@ mata:
 				vBound=J(1,timeslots,.)
 				vBound[timeslots] = 6.5                  /* effectively unbounded at the end */
 				
-				errVdraws[1,timeslots]=sdmarv*rnormal(1,1,0,1) /* First error draw we are okay with being unbounded (hence bound of 1000) */
+				errVdraws[1,timeslots]=sdmodv*rnormal(1,1,0,1) /* First error draw we are okay with being unbounded (hence bound of 1000) */
 
                 p=mm_which(((rowsum(errMarker[,1::5])):==5):*(errMarker[,timeslots]:==0))  /* Picks out the sole strategy that deviates at the end. */
 				
@@ -75,56 +69,54 @@ mata:
 				pBound[timeslots] = lnppsLongp[place,timeslots]-actPayMean[timeslots]
 				
                 errPdraws[,timeslots]=exp(bpo[9])*invnormal(runiform(1,1)*normal(pBound[timeslots]/exp(bpo[9])))			
-				
-end                    			
 
-/* We now have our first draws...to get our second draw, we now have to work backwards through the loop. */
-/* We now have our first two sets of error terms. */
-/* The function PriceShareGenerator returns price and viewership using ACTUAL (observed) errors up to some cutpoint */
-/* What we want to do is locate the UPPER BOUND on Viewership implied by the model. Let's try this... */
+				for (t=timeslots-1;t>=1;t--) {
+					vBound[t] = 10
+					pBound[t] = 10
+					errVdraws[t] = vBound[t]
+					PriceShareGenerator(t, 0, 1, place, S=., P=.)
+					check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t::timeslots])))
 
-/* Now, we back up one time period and see if we can find an upper bound on the counterfactual viewership ERROR TERM */
-
-
-/* Start with a very high error term and see if it is too high */
-
-mata:
-				t = 5
-				vBound[t] = 10
-				errVdraws[t] = vBound[t]
-				PriceShareGenerator(t, 0, 1, 58, S=., P=.)
-				check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t+1::timeslots])))
-
-				if (check < 0) {
-					Up   = 10
-					Down = -10
-					Dist = (Up - Down) / 2
-					XX   = (Up + Down) / 2
-					its = 0
-					do {
-						Dist = Dist / 2
-						errVdraws[t]= XX					
-						PriceShareGenerator(t, 0, 1, 58, S=., P=.)
-						check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t+1::timeslots])))				
-						if (check < 0) {
-							XX = XX - Dist
-						}
-						else {
-							XX = XX + Dist
-						}
-						its++
-					} while (abs(check)>.01 & its < 20)
+					if (check < 0) {
+						Up   = 10
+						Down = -10
+						Dist = (Up - Down) / 2
+						XX   = (Up + Down) / 2
+						its = 0
+						do {
+							Dist = Dist / 2
+							errVdraws[t]= XX					
+							PriceShareGenerator(t, 0, 1, place, S=., P=.)
+							check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t::timeslots])))				
+							if (check < 0) {
+								XX = XX - Dist
+							}
+							else {
+								XX = XX + Dist
+							}
+							its++
+						} while (abs(check)>.01 & its < 40)
 					vBound[t] = XX
+					if (check<0) vBound[t] = vBound[t]-1.1
+					}
+					errVdraws[t] = sdmodv*invnormal(normal(vBound[t]/sdmodv)*runiform(1,1))
+					PriceShareGenerator(t, 0, 1, place, S=., P=.)
+					pBound[t] = ln(rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t::timeslots]))))
+						errPdraws[t] = sdmodp*invnormal(normal(pBound[t]/sdmodp)*runiform(1,1))
 				}
-				2
-end
-
-/* Once out of the loop, we can now draw values for the viewership error term for the truncated normal: */
-mata:
-		errVdraws[t] = sdmodv*invnormal(normal(vBound[t])*runiform(1,1))
-		PriceShareGenerator(t, 0, 1, place, S=., P=.)
-		pBound[t] = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t::timeslots])))
-		errPdraws[t] = sdmodp*invnormal(normal(pBound[t])*runiform(1,1))
+			foo = pBound[(1,2,3,5,6)]
+			if (hasmissing(foo)) {
+				printf("dag")
+				pBound
+				errPdraws
+				vBound
+				errVdraws
+			}
+			}
+		}
+	}
+	counter = counter + timeslots
+}
 end
 
 				
