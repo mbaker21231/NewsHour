@@ -125,7 +125,6 @@ void PriceShareGenerator(real scalar cutT, cutFlagV, cutFlagP, real scalar place
 end
 
 
-
 /* Comments: */
 /* Note how this only runs through the time period of interest: T */
 /* Also note how it resets the variables of interest              */
