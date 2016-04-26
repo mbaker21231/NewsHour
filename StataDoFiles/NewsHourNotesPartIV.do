@@ -44,7 +44,7 @@ mata:
     sdmarv=exp(bo[25])
     sdmodv=exp(bo[26])
     
-    draws=5
+    draws=20
 end
 
 do MataFunctions\MataReshape.do

@@ -37,7 +37,6 @@ void PriceShareGenerator(real scalar cutT, cutFlagV, cutFlagP, real scalar place
     }
     else {
         p=mm_which(errMarker[,cutT]:==0)
-		if (rows(p) ==0) p = 1::rows(errMarker)
 
 		usePErrs=J(rows(p),timeslots,0)
 		useVErrs=J(rows(p),timeslots,0)
