@@ -3,30 +3,48 @@
   <head>
     <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=640">
 
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/github-dark.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print">
+    <link rel="stylesheet" href="stylesheets/core.css" media="screen">
+    <link rel="stylesheet" href="stylesheets/mobile.css" media="handheld, only screen and (max-device-width:640px)">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
 
+    <script type="text/javascript" src="javascripts/modernizr.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script type="text/javascript" src="javascripts/headsmart.min.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function () {
+        $('#main_content').headsmart()
+      })
+    </script>
     <title>Newshour by mbaker21231</title>
   </head>
 
   <body>
+    <a id="forkme_banner" href="https://github.com/mbaker21231/NewsHour">View on GitHub</a>
+    <div class="shell">
 
-    <header>
-      <div class="container">
-        <h1>Newshour</h1>
-        <h2>Repository documenting the work done in support of &quot;The News Hour&quot; project</h2>
+      <header>
+        <span class="ribbon-outer">
+          <span class="ribbon-inner">
+            <h1>Newshour</h1>
+            <h2>Repository documenting the work done in support of &quot;The News Hour&quot; project</h2>
+          </span>
+          <span class="left-tail"></span>
+          <span class="right-tail"></span>
+        </span>
+      </header>
 
-        <section id="downloads">
-          <a href="https://github.com/mbaker21231/NewsHour/zipball/master" class="btn">Download as .zip</a>
-          <a href="https://github.com/mbaker21231/NewsHour/tarball/master" class="btn">Download as .tar.gz</a>
-          <a href="https://github.com/mbaker21231/NewsHour" class="btn btn-github"><span class="icon"></span>View on GitHub</a>
-        </section>
-      </div>
-    </header>
+      <section id="downloads">
+        <span class="inner">
+          <a href="https://github.com/mbaker21231/NewsHour/zipball/master" class="zip"><em>download</em> .ZIP</a><a href="https://github.com/mbaker21231/NewsHour/tarball/master" class="tgz"><em>download</em> .TGZ</a>
+        </span>
+      </section>
 
-    <div class="container">
+
+      <span class="banner-fix"></span>
+
+
       <section id="main_content">
         <h1>
 <a id="the-newshour---estimating-the-value-of-local-news" class="anchor" href="#the-newshour---estimating-the-value-of-local-news" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>The NewsHour - Estimating the value of Local News</h1>
@@ -46,13 +64,13 @@ package. This allows one to place runnable <code>Stata</code> code in a notebook
 <p>The notebooks for the project detailing estimation methods are:</p>
 
 <ul>
-<li><a href="NewsHourNotes%20-%20Part%20I.ipynb">News Hour Notes - Part I</a></li>
-<li><a href="NewsHourNotes%20-%20Part%20II.ipynb">News Hour Notes - Part II</a></li>
-<li><a href="NewsHourNotes%20-%20Part%20III.ipynb">News Hour Notes - Part III</a></li>
-<li><a href="NewsHourNotes%20-%20Part%20IV(A).ipynb">News Hour Notes - Part IV(A)</a></li>
-<li><a href="NewsHourNotes%20-%20Part%20IV(B).ipynb">News Hour Notes - Part IV(B)</a></li>
-<li><a href="NewsHourNotes%20-%20Part%20V.ipynb">News Hour Notes - Part V</a></li>
-<li><a href="NewsHourNotes%20-%20Part%20VI.ipynb">News Hour Notes - Part VI</a></li>
+<li><a href="http://nbviewer.jupyter.org/github/mbaker21231/NewsHour/blob/master/NewsHourNotes%20-%20Part%20I.ipynb">News Hour Notes - Part I</a></li>
+<li><a href="http://nbviewer.jupyter.org/github/mbaker21231/NewsHour/blob/master/NewsHourNotes%20-%20Part%20II.ipynb">News Hour Notes - Part II</a></li>
+<li><a href="http://nbviewer.jupyter.org/github/mbaker21231/NewsHour/blob/master/NewsHourNotes%20-%20Part%20III.ipynb">News Hour Notes - Part III</a></li>
+<li><a href="http://nbviewer.jupyter.org/github/mbaker21231/NewsHour/blob/master/NewsHourNotes%20-%20Part%20IV%28A%29.ipynb">News Hour Notes - Part IV(A)</a></li>
+<li><a href="http://nbviewer.jupyter.org/github/mbaker21231/NewsHour/blob/master/NewsHourNotes%20-%20Part%20IV%28B%29.ipynb">News Hour Notes - Part IV(B)</a></li>
+<li><a href="http://nbviewer.jupyter.org/github/mbaker21231/NewsHour/blob/master/NewsHourNotes%20-%20Part%20V.ipynb">News Hour Notes - Part V</a></li>
+<li><a href="http://nbviewer.jupyter.org/github/mbaker21231/NewsHour/blob/master/NewsHourNotes%20-%20Part%20VI.ipynb">News Hour Notes - Part VI</a></li>
 </ul>
 
 <h3>
@@ -60,14 +78,27 @@ package. This allows one to place runnable <code>Stata</code> code in a notebook
 
 <ul>
 <li>Presenting estimation results (to be written)</li>
-<li><a href="NewsHourNotes%20-%20PostEstimation%20-%20Random%20Effects.ipynb">News Hour Notes - Post Estimation -Random Effects</a></li>
-<li><a href="NewsHourNotes%20-%20PostEstimation%20-%20Simulations.ipynb">News Hour Notes - Post Estimation - Creating Simulations</a></li>
+<li><a href="http://nbviewer.jupyter.org/github/mbaker21231/NewsHour/blob/master/NewsHourNotes%20-%20PostEstimation%20-%20Random%20Effects.ipynb">News Hour Notes - Post Estimation -Random Effects</a></li>
+<li><a href="http://nbviewer.jupyter.org/github/mbaker21231/NewsHour/blob/master/NewsHourNotes%20-%20PostEstimation%20-%20Creating%20Simulations.ipynb">News Hour Notes - Post Estimation - Creating Simulations</a></li>
 <li>News Hour Notes - Analyzing and plotting simulations</li>
 </ul>
 
 <h3>
 <a id="discussion-and-ideas-for-extensions-to-be-written" class="anchor" href="#discussion-and-ideas-for-extensions-to-be-written" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Discussion and ideas for extensions (To be written)</h3>
       </section>
+
+      <footer>
+        <span class="ribbon-outer">
+          <span class="ribbon-inner">
+            <p>this project by <a href="https://github.com/mbaker21231">mbaker21231</a> can be found on <a href="https://github.com/mbaker21231/NewsHour">GitHub</a></p>
+          </span>
+          <span class="left-tail"></span>
+          <span class="right-tail"></span>
+        </span>
+        <p>Generated with <a href="https://pages.github.com">GitHub Pages</a> using Merlot</p>
+        <span class="octocat"></span>
+      </footer>
+
     </div>
 
     
