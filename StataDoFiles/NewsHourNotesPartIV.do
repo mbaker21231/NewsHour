@@ -189,129 +189,191 @@ mata:
     counter = 1
     sniffTest = J(0,3,.)
 end
+
 do MataFunctions\sharemakers.do
 
+do MataFunctions\loopShareGenerator.do
 
-mata: 
-	BestJump = J(0,5,0)
-    for (c=1;c<=draws;c++) {
-		c
-        for (i=1;i<=rows(mLong);i++) {
-            gameMarkerp=panelsubmatrix(gameMarker,i,mLong)
-            playersp=colsum(gameMarkerp)
-            if (playersp>0) {
+do MataFunctions\PriceShareGenerator.do
+
+/* Construction Area */
+
+mata:
+    counter = 1
+    stata("set seed 5150")
+    priceErrs   = asarray_create("real", 2)
+    priceBounds = asarray_create("real", 2)
+    viewErrs    = asarray_create("real", 2)
+    viewBounds  = asarray_create("real", 2)
+    sharesBCS   = asarray_create("real", 3)
+end
+
+mata:
+    UpmodObs=J(rows(lnewsLong),0,0)
+    for (i=1;i<=draws*timeslots;i=i+timeslots) {
+        UpmodObs=UpmodObs,lnppsLong:-lnewsLong:*lnviewnLong:*bpo[1]:-otherlLong:*lnviewnLong:*bpo[2]:-
+            nnewsLong:*lnviewnLong:*bpo[3]:-lnewsLong:*bpo[4]:-otherlLong:*bpo[5]:-l_ACS_HHLong:*bpo[6]:-bpo[10]:-
+            UpsLong[,i::i+timeslots-1]:-UpmtLong[,i::i+timeslots-1]
+    }
+end
+
+
+/* Loop deconstruction */
+
+mata:
+	c = 1
+	i = 1
+        gameMarkerp = panelsubmatrix(gameMarker,i,mLong)
+        playersp = colsum(gameMarkerp)	
+	
                 statIdLongp=panelsubmatrix(statIdLong,i,mLong)
                 lnewsLongp=panelsubmatrix(lnewsLong,i,mLong)
                 nnewsLongp=panelsubmatrix(nnewsLong,i,mLong)
                 otherlLongp=panelsubmatrix(otherlLong,i,mLong)
                 othercLongp=panelsubmatrix(othercLong,i,mLong)
+                lnppsLongp=panelsubmatrix(lnppsLong,i,mLong)
+                marketIdLongp = panelsubmatrix(marketIdLong,i,mLong)
+                
                 nsToChange=select(statIdLongp,gameMarkerp)
+                
                 UvmtLongp=panelsubmatrix(UvmtLong,i,mLong)
                 UvmodLongp=panelsubmatrix(UvmodLong,i,mLong)
                 UvsLongp=panelsubmatrix(UvsLong,i,mLong)
+                UpsLongp=panelsubmatrix(UpsLong,i,mLong)
+                UpmtLongp=panelsubmatrix(UpmtLong,i,mLong)
+                UpmodobsLongp=panelsubmatrix(UpmodObs,i,mLong)
+            
                 XBVngLongp=panelsubmatrix(XBVngLong,i,mLong)
                 UvmodObsLongp=panelsubmatrix(UvmodObsLong,i,mLong)
                 l_ACS_HHLongp=panelsubmatrix(l_ACS_HHLong,i,mLong)
+                popp = round(exp(max(l_ACS_HHLongp)))
                 
-                for (k=1;k<=rows(nsToChange);k++) {
-                    pId=nsToChange[k]
+                gameList = J(0,2,.)
+           
+		   k = 1
+
+					pId = nsToChange[k]
+                    gameList = gameList \ (pId,i)
                     place=mm_which(statIdLongp:==pId)
                     lnewsHat=asarray(Bcs,(pId,1))
                     otherlHat=asarray(Bcs,(pId,2))
                     nnewsHat=asarray(Bcs,(pId,3))
-                    sharesToPlace=J(rows(lnewsHat),6,0)
-                    soPlace=J(rows(lnewsHat),6,0)
-                    sgPlace=J(rows(lnewsHat),6,0)
-                    lnewsOrig=lnewsLongp[place,]
-                    otherlOrig=otherlLongp[place,]
+                
+                    lnewsAct=lnewsLongp[place,]
+                    otherlAct=otherlLongp[place,]
+                    nnewsAct=nnewsLongp[place,]
+                
                     XBVplaceHold=J(rows(lnewsHat),cols(lnewsHat),.)
                     XBVplaceHoldMean=J(rows(lnewsHat),cols(lnewsHat),.)
+
+
+                    errMarker=(lnewsAct:==lnewsHat):*(otherlAct:==otherlHat)
+                
+                    errPdraws=J(1,timeslots,0)
+                    errVdraws=J(1,timeslots,0)
+                    pBound=J(1,timeslots,.)
+                    vBound=J(1,timeslots,.)
+                    vBound[timeslots] = 6.5       
+
+                    do {
                     
-                    for (q=1;q<=rows(lnewsHat);q++) {
-                        lnewsLongp[place,]=lnewsHat[q,]
-                        otherlLongp[place,]=otherlHat[q,]
-                        nnewsLongp[place,]=nnewsHat[q,]
-                        lnewsLongLagp=J(rows(lnewsLongp),1,0)
-                        nnewsLongLagp=J(rows(lnewsLongp),1,0)
-                        otherlLongLagp=J(rows(lnewsLongp),1,0)
-                        siLagp=J(rows(lnewsLongp),1,0)
-                        totlnewsp=J(rows(lnewsLongp),1,0)
-                        totnnewsp=J(rows(nnewsLongp),1,0)
-    
-                        lnewsnLongp=lnewsLongp:*ln(1:+colsum(lnewsLongp))
-                        otherlnLongp=otherlLongp:*ln(1:+colsum(otherlLongp))
-                        nnewsnLongp=nnewsLongp:*ln(1:+colsum(nnewsLongp))
-                        othercnLongp=othercLongp:*ln(1:+colsum(othercLongp))
+                        errVdraws[1,timeslots]=sdmodv*rnormal(1,1,0,1) 
 
-                        for (t=1;t<=timeslots;t++) {
-                            if (t!=1) siLagp=ln(siLagp)
-                            XV=lnewsLongp[,t],otherlLongp[,t],nnewsLongp[,t],
-                                lnewsLongLagp:*lnewsLongp[,t],
-                                nnewsLongLagp:*lnewsLongp[,t],
-                                lnewsLongLagp:*nnewsLongp[,t],
-                                nnewsLongLagp:*nnewsLongp[,t],
-                                siLagp,
-                                siLagp:*lnewsLongLagp:*lnewsLongp[,t],
-                                siLagp:*nnewsLongLagp:*lnewsLongp[,t],
-                                siLagp:*lnewsLongLagp:*nnewsLongp[,t],
-                                siLagp:*nnewsLongLagp:*nnewsLongp[,t],
-                                lnewsLongp[,t]:*ln(1:+totlnewsp),nnewsLongp[,t]:*ln(1:+totnnewsp),
-                                l_ACS_HHLongp[,t],lnewsnLongp[,t],otherlnLongp[,t],
-                                nnewsnLongp[,t],othercnLongp[,t],J(rows(lnewsLongp),1,1)
+                        p=mm_which(((rowsum(errMarker[,1::5])):==5):*(errMarker[,timeslots]:==0))  /*the sole deviate strategy */
+                    
+                        shareHat = loopShareGenerator(place, p, timeslots)
+                    
+                        actPayMean=(lnewsHat[p,]*bpo[1]:+otherlHat[p,]*bpo[2]:+nnewsHat[p,]*bpo[3]):*ln(popp:*shareHat):+
+                            lnewsHat[p,]:*bpo[4]:+otherlHat[p,]*bpo[5]:+bpo[6]:*l_ACS_HHLongp[place,]:+bpo[10]:+
+                            UpsLongp[place,counter::counter+timeslots-1]:+UpmtLongp[place,counter::counter+timeslots-1]
 
-                                XBV=XV*betaDynoStart':+UvmtLongp[,counter+t-1]:+
-                                    UvsLongp[,counter+t-1]:+UvmodObsLongp[,counter+t-1]
-                                if (lnewsHat[q,t]!=lnewsOrig[t]) {
-                                    XBV[place,]=XV[place,]*betaDynoStart':+UvmtLongp[place,counter+t-1]:+
-                                        UvsLongp[place,counter+t-1]:+UvmodLongp[place,counter+t-1]
-                                }
+                        pBound[timeslots] = lnppsLongp[place,timeslots]-actPayMean[timeslots]
+                    
+                        errPdraws[,timeslots]=exp(bpo[9])*invnormal(runiform(1,1)*normal(pBound[timeslots]/exp(bpo[9])))
 
-                            XBVplaceHold[q,t]=XBV[place]
-                            XBVplaceHoldMean[q,t]=XBV[place]-UvmodLongp[place,counter+t-1]
+                        problemflag=0
+                        for (t=timeslots-1;t>=1;t--) {
+                            vBound[t] = 10
+                            pBound[t] = 10
+                            errVdraws[t] = vBound[t]
+                            PriceShareGenerator(t, 0, 1, place, S=., P=., allShares = .)
+                            check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t::timeslots])))
 
-                            sharesP=esharesStable(XBV,lnewsLongp[,t],otherlLongp[,t],nnewsLongp[,t],
-                                othercLongp[,t],bo[1],bo[2],bo[3],bo[4])
-                            sharesToPlace[q,t]=sharesP[place,]
-                            soPlace[q,t]=1-sum(sharesP)
+                            if (check < 0) {
+                                Up   = 10
+                                Down = -10
+                                Dist = (Up - Down) / 2
+                                XX   = (Up + Down) / 2
+                                its = 0
+                                do {
+                                    Dist = Dist / 2
+                                    errVdraws[t]= XX
+                                    PriceShareGenerator(t, 0, 1, place, S=., P=., allShares = .)
+                                    check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t::timeslots])))
+                                    if (check < 0) {
+                                        XX = XX - Dist
+                                    }
+                                    else {
+                                        XX = XX + Dist
+                                    }
+                                    its++
+                                } while (abs(check)>.01 & its < 40)
+                            vBound[t] = XX
+                            if (check<0) vBound[t] = vBound[t]-1.1
+                            }
+                            errVdraws[t] = sdmodv*invnormal(normal(vBound[t]/sdmodv)*runiform(1,1))
+                            vBound[t] = 10
+                            pBound[t] = 10
+                            errVdraws[t] = vBound[t]
+                            PriceShareGenerator(t, 0, 1, place, S=., P=., allShares=.)
+                            check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t::timeslots])))
 
-		
-                            slPlace=sum(lnewsLongp[,t]:*sharesP)
-                            snPlace=sum(nnewsLongp[,t]:*sharesP)
-                            solPlace=sum(otherlLongp[,t]:*sharesP)
-                            scPlace=sum(othercLongp[,t]:*sharesP)
-
-                            sgPlace[q,t]=lnewsLongp[place,t]:*slPlace:+
-                                nnewsLongp[place,t]:*snPlace:+
-                                otherlLongp[place,t]:*solPlace:+
-                                othercLongp[place,t]:*scPlace
-
-                            siLagp=sharesP
-                            totlnewsp=totlnewsp:+J(rows(lnewsLongp),1,colsum(lnewsLongp[,t]:*sharesP))
-                            totnnewsp=totnnewsp:+J(rows(nnewsLongp),1,colsum(nnewsLongp[,t]:*sharesP))
-                            lnewsLongLagp=lnewsLongp[,t]
-                            nnewsLongLagp=nnewsLongp[,t]
-                            otherlLongLagp=otherlLongp[,t]
+                            if (check < 0) {
+                                Up   = 10
+                                Down = -10
+                                Dist = (Up - Down) / 2
+                                XX   = (Up + Down) / 2
+                                its = 0
+                                do {
+                                    Dist = Dist / 2
+                                    errVdraws[t]= XX
+                                    PriceShareGenerator(t, 0, 1, place, S=., P=., allShares=.)
+                                    check = rowsum(exp(lnppsLongp[place,t::timeslots]))-max(rowsum(exp(P[,t::timeslots])))
+                                    if (check < 0) {
+                                        XX = XX - Dist
+                                    }
+                                    else {
+                                        XX = XX + Dist
+                                    }
+                                    its++
+                                } while (abs(check)>.01 & its < 40)
+                            vBound[t] = XX
+                            if (check<0) vBound[t] = vBound[t]-1.1
+                            }
+                            errVdraws[t] = sdmodv*invnormal(normal(vBound[t]/sdmodv)*runiform(1,1))
+                            errPdraws[t] = sdmodp*invnormal(normal(pBound[t]/sdmodp)*runiform(1,1))
                         }
-  						shoo = select(siLong,statIdLong:==pId)
-							
-						BestJump = BestJump \ (max(rowsum(sharesToPlace:-shoo)),pId,c,i,pId)
-						
-                        asarray(sharesBcs,(pId,c,1),sharesToPlace)
-                        asarray(sharesBcs,(pId,c,2),soPlace)
-                        asarray(sharesBcs,(pId,c,3),sgPlace)
-                        asarray(Bcs,(pId,4),XBVplaceHold)
-                        asarray(Bcs,(pId,5),XBVplaceHoldMean)
-                        lnewsLongp[place,]=lnewsOrig
-                        otherlLongp[place,]=otherlOrig
-                        sniffTest=sniffTest \ (c,mean(rowsum(sharesToPlace)),rowsum(siLong[k,]))
+                        checkerator = (nnewsAct:!=1):*(pBound:==.)
+                        problemflag = rowsum(checkerator)>0
+                        if (problemflag) {
+                            printf("redrawing");displayflush()
+                        }
+                    } while (problemflag==1)
 
-                    }
-                }
-            }
-        }
-        counter=counter+timeslots
-    }
-end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /* Big conclusion ----- simulated unilateral deviations seem to be working okay... */
