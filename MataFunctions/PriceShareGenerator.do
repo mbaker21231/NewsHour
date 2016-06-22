@@ -74,6 +74,7 @@ mata:
             othercnLongp=othercLongp:*ln(1:+colsum(othercLongp))	
         
             shares = J(rows(lnewsLongp),0,.)
+
             for (t=1;t<=timeslots;t++) {
                 if (t!=1) siLagp=ln(siLagp)
                 XV=lnewsLongp[,t],otherlLongp[,t],nnewsLongp[,t],
@@ -105,11 +106,12 @@ mata:
         }
 
             Shares[k,.] = shares[place,]
+
         }
 
         actPayMean=(lnewsHat[p,]*bpo[1]:+otherlHat[p,]*bpo[2]:+nnewsHat[p,]*bpo[3]):*ln(popp:*Shares):+
             lnewsHat[p,]:*bpo[4]:+otherlHat[p,]*bpo[5]:+bpo[6]:*l_ACS_HHLongp[place,]:+bpo[10]:+
-            UpsLongp[place,counter::counter+timeslots-1]:+UpmtLongp[place,counter::counter+timeslots-1]	
+            UpsLongp[place,counter::counter+timeslots-1]:+UpmtLongp[place,counter::counter+timeslots-1]
 
         lnewsLongp = phlnewsLongp
         otherlLongp = photherlLongp
@@ -122,7 +124,6 @@ mata:
         P = actPayMean+usePErrs
         
         allS = shares
-            
         
     }
 end
