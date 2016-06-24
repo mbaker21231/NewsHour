@@ -133,6 +133,10 @@ mata:
 end
 
 mata:
+	mata matsave REffects UpsLong UpmtLong UvsLong UvmtLong, replace
+end
+
+mata:
     gameMarker = rowsum(gameLong):>0
     sum(gameMarker)
 end
@@ -147,8 +151,6 @@ end
 
 mata:
     Bcs      =asarray_create("real", 2)
-    sharesBcs=asarray_create("real", 3)
-    uVinfo   =asarray_create("real", 3) 
 end
 
 do MataFunctions\stratmat.do
@@ -185,9 +187,12 @@ mata:
 end
 
 mata:
+	mata matsave BCS Bcs, replace
+end
+
+mata:
     mLong   = panelsetup(marketIdLong,1)
     counter = 1
-    sniffTest = J(0,3,.)
 end
 
 do MataFunctions\sharemakers.do
@@ -217,15 +222,12 @@ mata:
     }
 end
 
-
-/* Loop deconstruction */
-
 mata:
-	c = 1
-	i = 1
-        gameMarkerp = panelsubmatrix(gameMarker,i,mLong)
-        playersp = colsum(gameMarkerp)	
-	
+    for (c=1;c<=draws;c++) {
+        for (i=1;i<=rows(mLong);i++) {
+            gameMarkerp = panelsubmatrix(gameMarker,i,mLong)
+            playersp = colsum(gameMarkerp)
+            if (playersp>0) { 
                 statIdLongp=panelsubmatrix(statIdLong,i,mLong)
                 lnewsLongp=panelsubmatrix(lnewsLong,i,mLong)
                 nnewsLongp=panelsubmatrix(nnewsLong,i,mLong)
@@ -249,10 +251,10 @@ mata:
                 popp = round(exp(max(l_ACS_HHLongp)))
                 
                 gameList = J(0,2,.)
-           
-		   k = 1
-
-					pId = nsToChange[k]
+                
+                for (k=1;k<=rows(nsToChange);k++) { 
+                    c,i,k
+                    pId = nsToChange[k]
                     gameList = gameList \ (pId,i)
                     place=mm_which(statIdLongp:==pId)
                     lnewsHat=asarray(Bcs,(pId,1))
@@ -265,16 +267,15 @@ mata:
                 
                     XBVplaceHold=J(rows(lnewsHat),cols(lnewsHat),.)
                     XBVplaceHoldMean=J(rows(lnewsHat),cols(lnewsHat),.)
-
-
+                    
                     errMarker=(lnewsAct:==lnewsHat):*(otherlAct:==otherlHat)
                 
                     errPdraws=J(1,timeslots,0)
                     errVdraws=J(1,timeslots,0)
                     pBound=J(1,timeslots,.)
                     vBound=J(1,timeslots,.)
-                    vBound[timeslots] = 6.5       
-
+                    vBound[timeslots] = 6.5                  
+        
                     do {
                     
                         errVdraws[1,timeslots]=sdmodv*rnormal(1,1,0,1) 
@@ -359,143 +360,44 @@ mata:
                             printf("redrawing");displayflush()
                         }
                     } while (problemflag==1)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Big conclusion ----- simulated unilateral deviations seem to be working okay... */
-/* Next part is the sampling weights for the viewership error terms. Here goes     */
+                asarray(priceErrs,(pId,c),errPdraws)
+                asarray(priceBounds,(pId,c),pBound)
+                asarray(viewErrs,(pId,c),errVdraws)
+                asarray(viewBounds,(pId,c),vBound)
+          
+                s0 = 1:-colsum(allShares)
+                sl = colsum(lnewsLongp:*allShares)
+                sn = colsum(nnewsLongp:*allShares)
+                so = colsum(otherlLongp:*allShares)
+                sc = colsum(othercLongp:*allShares)
+                sg=colsum(lnewsLongp[place,]:*sl:+nnewsLongp[place,]:*sn:+
+                    otherlLongp[place,]:*so:+othercLongp[place,]:*sc)  
+                asarray(sharesBCS,(pId,c,1),allShares[place,])
+                asarray(sharesBCS,(pId,c,2),sg)
+                asarray(sharesBCS,(pId,c,3),s0)
+                }
+            }
+        }
+        counter = counter + timeslots
+    }
+end
 
 mata:
-    uv      = J(rows(statIdLong),0,.)
-    uvg     = J(rows(statIdLong),0,.)
-    uvsi    = J(rows(statIdLong),0,.)
-    uvso    = J(rows(statIdLong),0,.)
-    uvsg    = J(rows(statIdLong),0,.)
-    uvre1   = J(rows(statIdLong),0,.)
-    uvre2   = J(rows(statIdLong),0,.)
-    uvre1g  = J(rows(statIdLong),0,.)
-    uvre2g  = J(rows(statIdLong),0,.)
-   
-    looper  = uniqrows(asarray_keys(sharesBcs)[,1])
-    counter = 1
+	mata matsave PVDraws priceErrs priceBounds viewErrs viewBounds sharesBCS, replace
 end
 
 do MataFunctions\lnnd.do
 
-
-/* Why are we running this loop at this point? */
-
 mata:
-    for (c=1;c<=draws;c++) {
-        ackToAdd=J(rows(statIdLong),timeslots,.)
-        ackToAddg=J(rows(statIdLong),timeslots,.)
-        ackToAddsi=J(rows(statIdLong),timeslots,.)
-        ackToAddso=J(rows(statIdLong),timeslots,.)
-        ackToAddsg=J(rows(statIdLong),timeslots,.)
-        ackToAddre1=J(rows(statIdLong),timeslots,.)
-        ackToAddre2=J(rows(statIdLong),timeslots,.)
-
-        for (i=1;i<=rows(looper);i++) {
-            statId=looper[i]
-            lnewsHat=asarray(Bcs,(statId,1))
-            otherlHat=asarray(Bcs,(statId,2))
-            nnewsHat=asarray(Bcs,(statId,3))
-
-            siHat=asarray(sharesBcs,(statId,c,1))
-            soHat=asarray(sharesBcs,(statId,c,2))
-            sgHat=asarray(sharesBcs,(statId,c,3))
-            XBVs=asarray(Bcs,(statId,4))
-            XBVsm=asarray(Bcs,(statId,5))
-            idPos=mm_which(statId:==statIdLong)
-            lnewsAct=lnewsLong[idPos,]
-            otherlAct=otherlLong[idPos,]
-            nnewsAct=nnewsLong[idPos,]
-            Mpop=select(popLong,statIdLong:==statId)
-            for (t=6;t>=2;t--) {
-                if (nnewsAct[,t]!=1) {
-                    sameButOneProfs=mm_which((rowsum(lnewsAct[,1::t-1]:==lnewsHat[,1::t-1]):==t-1):*
-                        (lnewsAct[,t]:!=lnewsHat[,t]))
-                    sameButOneProfs=min(sameButOneProfs)
-
-                    ackToAddsi[idPos,t]=siHat[sameButOneProfs,t]	/* save the shares */
-                    ackToAddso[idPos,t]=soHat[sameButOneProfs,t]	
-                    ackToAddsg[idPos,t]=sgHat[sameButOneProfs,t]
-
-                    ackToAdd[idPos,t]=XBVs[sameButOneProfs,t]	/* This is wrong! */
-                    mu=lnewsHat[sameButOneProfs,t]*bo[1]+
-                        otherlHat[sameButOneProfs,t]*bo[2]+
-                        nnewsHat[sameButOneProfs,t]*bo[3]+
-                        (1-lnewsHat[sameButOneProfs,t]-otherlHat[sameButOneProfs,t]-nnewsHat[sameButOneProfs,t])*bo[4]
-
-                    ackToAddg[idPos,t]=lnnd(XBVs[sameButOneProfs,t],XBVsm[sameButOneProfs,t],bo[22])-ln(1/(1-mu)-
-                        mu*siHat[sameButOneProfs,t]/sgHat[sameButOneProfs,t]-siHat[sameButOneProfs,t])
-                }
-                else {
-                    ackToAdd[idPos,t]=0
-                    ackToAddg[idPos,t]=0
-                    ackToAddsi[idPos,t]=0
-                    ackToAddso[idPos,t]=0
-                    ackToAddsg[idPos,t]=0
-                }
-            }
-   
-            if (nnewsAct[1]!=1) {
-                sameButOneProfs=mm_which(lnewsAct[1]:!=lnewsHat[,1])
-                sameButOneProfs=min(sameButOneProfs)
-                ackToAdd[idPos,1]=XBVs[sameButOneProfs,t]
-                mu=lnewsHat[sameButOneProfs,1]*bo[1]+
-                    otherlHat[sameButOneProfs,1]*bo[2]+
-                    nnewsHat[sameButOneProfs,1]*bo[3]+
-                    (1-lnewsHat[sameButOneProfs,1]-otherlHat[sameButOneProfs,1]-nnewsHat[sameButOneProfs,1])*bo[4]			
-
-                ackToAddg[idPos,1]=lnnd(XBVs[sameButOneProfs,1],XBVsm[sameButOneProfs,1],bo[26])-ln(1/(1-mu)-
-                    mu*siHat[sameButOneProfs,1]/sgHat[sameButOneProfs,1]-siHat[sameButOneProfs,1])
-                ackToAddsi[idPos,1]=siHat[sameButOneProfs,1]
-                ackToAddso[idPos,1]=soHat[sameButOneProfs,1]
-                ackToAddsg[idPos,1]=sgHat[sameButOneProfs,1]
-            }
-            else {
-                ackToAdd[idPos,1]=0
-                ackToAddg[idPos,1]=0
-                ackToAddsi[idPos,1]=0
-                ackToAddso[idPos,1]=0
-                ackToAddsg[idPos,1]=0
-            }
-
-            ackToAddre1[idPos,]=UvsLong[idPos,counter::counter+timeslots-1]
-            ackToAddre2[idPos,]=UvmtLong[idPos,counter::counter+timeslots-1]
-        }
-
-        uv=uv,ackToAdd
-        uvg=uvg,ackToAddg
-        uvsi=uvsi,ackToAddsi
-        uvso=uvso,ackToAddso
-        uvsg=uvsg,ackToAddsg
-        uvre1=uvre1,ackToAddre1
-        uvre2=uvre2,ackToAddre2
-        counter=counter+timeslots  
-    }
+	mata matuse PVDraws, replace
 end
 
-/* the above are simply the sampling weights for the viewership model simulated terms. Some are large, but */
-/* it doesn't seem like things are really all that bad there...Do we ever get missing values? */
-
 mata:
-    uvre1g=lnnd(uvre1,0,ln(sdstav)):*1:/rowsum(gameLong)    
+    upre1 = UpmtLong
+    upre2 = UpsLong
+    uvre1 = UvmtLong
+    uvre2 = UvsLong
+    
     uvre2Weights=J(rows(statIdLong),timeslots,.)
     for (i=1;i<=rows(mLong);i++) {
         gP=panelsubmatrix(gameLong,i,mLong)
@@ -503,222 +405,138 @@ mata:
         weightsP=(gPtotal:*gP)
     uvre2Weights[mLong[i,1]::mLong[i,2],.]=weightsP
     }
-
-    uvre2g=lnnd(uvre2,0,ln(sdmarv)):*1:/rowsum(uvre2Weights)    
-end 
-
-mata:
-    UpmodObs=J(rows(lnewsLong),0,0)
-    for (i=1;i<=draws*timeslots;i=i+timeslots) {
-        UpmodObs=UpmodObs,lnppsLong:-lnewsLong:*lnviewnLong:*bpo[1]:-otherlLong:*lnviewnLong:*bpo[2]:-
-            nnewsLong:*lnviewnLong:*bpo[3]:-lnewsLong:*bpo[4]:-otherlLong:*bpo[5]:-l_ACS_HHLong:*bpo[6]:-bpo[10]:-
-            UpsLong[,i::i+timeslots-1]:-UpmtLong[,i::i+timeslots-1]
-    }
+    
+    upre1g =lnnd(upre1,0,ln(sdstap)):*1:/rowsum(gameLong)     
+    upre2g =lnnd(upre2,0,ln(sdmarp)):*1:/rowsum(uvre2Weights)
+    uvre1g=lnnd(uvre1,0,ln(sdstav)):*1:/rowsum(gameLong)  
+    uvre2g=lnnd(uvre2,0,ln(sdmarv)):*1:/rowsum(uvre2Weights)   
 end
 
-/* Histogram of the above seems reasonable */
-/* We probably should include this in what we are doing... */
-
-/* Note the below code applies to 58, 61, 63, 171, 172,178,181, 183, etc. */
+mata:
+	up  = J(rows(statIdLong), timeslots*draws, 0)
+	upg = J(rows(statIdLong), timeslots*draws, 0)
+	upb = J(rows(statIdLong), timeslots*draws, 0)
+end
 
 mata:
-    priceErrs=asarray_create("real",2)
-    simPrices=asarray_create("real",2)
-    priceBounds=asarray_create("real",2)
-
-    up=J(rows(statIdLong),0,.)
-    upg=J(rows(statIdLong),0,.)
-    upb=J(rows(statIdLong),0,.)
-    vup=J(rows(statIdLong),0,.)
-    upre1=J(rows(statIdLong),0,.)
-    upre2=J(rows(statIdLong),0,.)
-
-    Troublers=J(0,6,.)
-    allDraws=J(0,6,.)
-
-    counter=1
-    for (d=1;d<=draws;d++) {
-        uptoAdd=J(rows(statIdLong),6,.)
-        uptoAddg=J(rows(statIdLong),6,.)
-        uptoAddb=J(rows(statIdLong),6,.)
-        vuptoAdd=J(rows(statIdLong),6,.)
-        upre1toAdd=J(rows(statIdLong),6,.)
-        upre2toAdd=J(rows(statIdLong),6,.)
-        gameList=J(0,2,.)
-        for (i=1;i<=rows(statIdLong);i++) {
-            if (gameMarker[i]==1) {
-                idp=statIdLong[i]
-                gameList=gameList \ (idp,i)
-                lnewsHat=asarray(Bcs,(idp,1))
-                otherlHat=asarray(Bcs,(idp,2))
-                nnewsHat=asarray(Bcs,(idp,3))
-                sharesHat=asarray(sharesBcs,(idp,d,1))
-                lnewsAct=lnewsLong[i,]
-                otherlAct=otherlLong[i,]
-                nnewsAct=nnewsLong[i,]
+looper = 1
+    for (c=1; c<=draws; c++ ) {
+        for (i=1; i<=rows(statIdLong); i++) {
+            pId = statIdLong[i]
+            if (gameMarker[i] == 1) {
+                siHat   = asarray(sharesBCS,(pId,c,1))
+                sgHat   = asarray(sharesBCS,(pId,c,2))
+                pErr    = asarray(priceErrs,(pId,c))
+                pB      = asarray(priceBounds,(pId,c))
             
-                problem=0 
-                Try=1
+                lnewsp  = lnewsLong[i, ]
+                otherlp = otherlLong[i, ]
+                nnewsp  = nnewsLong[i, ]
             
-                do {
-                    errMarker=(lnewsAct:==lnewsHat):*(otherlAct:==otherlHat)	
-                    errPdraws=J(1,6,0)
-
-                    p=mm_which(((rowsum(errMarker[,1::5])):==5):*(errMarker[,timeslots]:==0))	/* Same until last period */
-
-                    actPayMean=(lnewsHat[p,]*bpo[1]:+otherlHat[p,]*bpo[2]:+nnewsHat[p,]*bpo[3]):*ln(popLong[i,]:*sharesHat[p,]):+
-                        lnewsHat[p,]:*bpo[4]:+otherlHat[p,]*bpo[5]:+bpo[6]:*l_ACS_HHLong[i,]:+bpo[10]:+
-                        UpsLong[i,counter::counter+timeslots-1]:+UpmtLong[i,counter::counter+timeslots-1]
-                    Bound=J(1,timeslots,.)	
-
-                    Bound[timeslots]=lnppsLong[i,timeslots]-actPayMean[timeslots]
-                    errPdraws[,timeslots]=exp(bpo[9])*invnormal(runiform(1,1)*normal(Bound[timeslots]/exp(bpo[9])))
-
-                    if (nnewsLong[i,timeslots]!=1) {
-                        uptoAdd[i,timeslots]=actPayMean[timeslots]+errPdraws[timeslots]
-                        meanP=actPayMean[timeslots]
-                        uptoAddg[i,timeslots]=lnnd(uptoAdd[i,timeslots],meanP,bpo[9])-
-                            ln(normal(Bound[timeslots]/exp(bpo[9])))
-
-                        uptoAddb[i,timeslots]=actPayMean[timeslots]+Bound[timeslots]
-                        vuptoAdd[i,timeslots]=ln(popLong[i,1]:*sharesHat[p,timeslots])	/* should be equal to viewership used above */
-                    }
-                    else {
-                        uptoAdd[i,timeslots]=0
-                        uptoAddg[i,timeslots]=0
-                        uptoAddb[i,timeslots]=0
-                        vuptoAdd[i,timeslots]=0
-                    }
-
-                    UpmodObz=UpmodObs[i,counter::counter+timeslots-1]
-                    for (t=timeslots-1;t>=1;t--) {
-                        if (nnewsAct[t]!=1) {
-                            if (t>1) {
-                                p=mm_which((rowsum(errMarker[,1::t-1]):==t-1):*(errMarker[,t]:==0))
-                                useErrs=J(rows(p),timeslots,0)
-                                useErrs[,1::t-1]=J(rows(p),1,UpmodObs[i,1::t-1])
-                                useErrs[,t+1::cols(useErrs)]=
-                                    errMarker[p,t+1::cols(errPdraws)]:*UpmodObz[1,t+1::cols(errPdraws)]:+
-                                    (1:-errMarker[p,t+1::cols(errPdraws)]):*errPdraws[,t+1::cols(errPdraws)]
-                            }
-                            else {
-                                p=mm_which(errMarker[,t]:==0)
-                                useErrs=J(rows(p),timeslots,0)	
-                                useErrs[,t+1::cols(useErrs)]=
-                                    errMarker[p,t+1::cols(errPdraws)]:*UpmodObz[1,t+1::cols(errPdraws)]:+
-                                    (1:-errMarker[p,t+1::cols(errPdraws)]):*errPdraws[,t+1::cols(errPdraws)]						
-                            }
-
-                            actPayMean=(lnewsHat[p,]*bpo[1]:+otherlHat[p,]*bpo[2]:+nnewsHat[p,]*bpo[3]):*ln(popLong[i,]:*sharesHat[p,]):+
-                                lnewsHat[p,]:*bpo[4]:+otherlHat[p,]*bpo[5]:+bpo[6]:*l_ACS_HHLong[i,]:+bpo[10]:+
-                                UpsLong[i,counter::counter+timeslots-1]:+UpmtLong[i,counter::counter+timeslots-1]
-
-                            max1=sum(exp(lnppsLong[i,t::timeslots]))
-                            max2=max(rowsum(exp(actPayMean[,t+1::timeslots]:+useErrs[,t+1::timeslots])))
-
-                            Bound[t]=ln(max1-max2)-actPayMean[rows(actPayMean),t] 		
-                            allDraws=allDraws \ (d,i,marketIdLong[i],idp,t,max1-max2)
-                            errPdraws[,t]=exp(bpo[9])*invnormal(runiform(1,1)*normal(Bound[t]/exp(bpo[9])))
-                            if (errPdraws[,t]==.) {
-                                printf("+");displayflush();
-                                problem=1
-                                Troublers=Troublers \ (d,i,marketIdLong[i],idp,t,max1-max2)
-                                errPdraws[,t]=-20
-                                Bound[t]=-20
-                                Try++
-                            }
-
-                            uptoAdd[i,t]=actPayMean[rows(actPayMean),t]+errPdraws[,t]
-                            meanP=actPayMean[rows(actPayMean),t]
-                            uptoAddg[i,t]=lnnd(uptoAdd[i,t],meanP,bpo[9])-
-                                min((ln(normal((uptoAdd[i,t]-meanP)/exp(bpo[9]))),-ln(normal(-35))))
-                            uptoAddb[i,t]=meanP+Bound[t]
-                            vuptoAdd[i,t]=min(popLong[i,1]:*sharesHat[p,t])					
-                        }
-                        else {
-                            errPdraws[,t]=UpmodObz[1,t]
-                            uptoAdd[i,t]=0
-                            uptoAddg[i,t]=0
-                            uptoAddb[i,t]=0
-                            vuptoAdd[i,t]=0
-                        }
-                    }
-                } while (problem==1 & Try<12)    /* See if it makes a difference here at all */
-
-
-            asarray(priceErrs,(statIdLong[i],d),errPdraws)
-            asarray(priceBounds,(statIdLong[i],d),Bound)
-
-            simPps=(lnewsHat*bpo[1]:+otherlHat*bpo[2]:+nnewsHat*bpo[3]):*ln(sharesHat:*popLong[i,])+
-                lnewsHat*bpo[4]:+otherlHat*bpo[5]:+bpo[6]:*l_ACS_HHLong[i,]:+bpo[10]:+
-                UpsLong[i,counter::counter+timeslots-1]:+UpmtLong[i,counter::counter+timeslots-1]:+
-                errMarker:*UpmodObz[1,1::timeslots]:+(1:-errMarker):*errPdraws
+                pop    = popLong[i, ]
+                logPop = l_ACS_HHLong[i,]
             
-            asarray(simPrices,(statIdLong[i],d),simPps)
+                upmt  = upre1[i, looper::looper + timeslots - 1]
+                ups = upre2[i, looper::looper + timeslots - 1]
             
-            upre1toAdd[i,]=UpsLong[i,counter::counter+timeslots-1]
-            upre2toAdd[i,]=UpmtLong[i,counter::counter+timeslots-1]	
+                meanPHat = otherlp*bpo[1]:*ln(siHat:*pop) :+ lnewsp*bpo[2]:*ln(siHat:*pop) :+ nnewsp*bpo[3]:*ln(siHat:*pop) :+
+                    bpo[4]:*otherlp :+ bpo[5]:*lnewsp :+ bpo[6]:*logPop :+ ups :+ upmt :+ bpo[10] 
+                pHat = meanPHat :+ pErr
+                gup =  lnnd(pErr, 0, ln(sdmodp)) :- ln(normal(pB))
+            
+                up[i, looper::looper + timeslots - 1]  = pHat
+                upg[i, looper::looper + timeslots - 1] = gup
+                upb[i, looper::looper + timeslots - 1] = meanPHat :+ pB
             }
         }
-        up=up,uptoAdd
-        upg=upg,uptoAddg
-        upb=upb,uptoAddb
-        vup=vup,vuptoAdd
-        upre1=upre1,upre1toAdd
-        upre2=upre2,upre2toAdd
-        counter=counter+timeslots
+        looper = looper + timeslots
     }
+
 end
-
-mata: 
-    upre1g=lnnd(upre1,0,ln(sdstap)):*1:/rowsum(gameLong)     /* spread across observations */
-    upre2g=lnnd(upre2,0,ln(sdmarp)):*1:/rowsum(uvre2Weights)
-end
-
-
 
 mata:
-    NashProfiles=asarray_create("real",4)
-    NashProfits  =asarray_create("real",3)
-    NashShares =asarray_create("real",3)
+	uv  = J(rows(statIdLong), timeslots*draws, 0)
+	uvg = J(rows(statIdLong), timeslots*draws, 0)
+	uvb = J(rows(statIdLong), timeslots*draws, 0)
+end
 
-    PriceMaxSps=asarray_create("real",2) 
+mata:
+looper = 1
+    for (c=1; c<=draws; c++ ) {
+        for (i=1; i<=rows(statIdLong); i++) {
+            pId = statIdLong[i]
+            if (gameMarker[i] == 1) {
+                siHat   = asarray(sharesBCS, (pId,c,1))
+                sgHat   = asarray(sharesBCS, (pId,c,2))
+                vErr    = asarray(viewErrs, (pId,c))
+                vB      = asarray(viewBounds, (pId,c))   
+            
+                lnewsp  = lnewsLong[i, ]
+                otherlp = otherlLong[i, ]
+                nnewsp  = nnewsLong[i, ]
+                othercp = othercLong[i, ]
+                
+                lnewsLp  = lnewsLongLag[i, ]
+                otherlLp = otherlLong[i, ]
+                nnewsLp  = nnewsLongLag[i, ]
+                lnsiLp     = 0, ln(siLong[i,1::5 ])
+                totlnewsp = totlnews[i, ]
+                totnnewsp = totnnews[i, ]
+                lnewsnp   = exp(lnewsnLong[i, ] :- 1)
+                nnewsnp   = nnewsnLong[i, ]
+                othercnp  = othercnLong[i, ]
+                otherlnp  = exp(otherlnLong[i, ] :- 1)
+            
+                logPop = l_ACS_HHLong[i,]
+
+                uvmt  = uvre1[i, looper::looper + timeslots - 1]
+                uvs    = uvre2[i, looper::looper + timeslots - 1]
+            
+                uvHat = otherlp*bo[5] :+ lnewsp*bo[6] :+ nnewsp*bo[7] :+ 
+                        otherlp:*lnewsLp*bo[8] :+ otherlp:*nnewsLp*bo[9] :+
+                        nnewsp:*lnewsLp*bo[10] :+ nnewsp:*nnewsLp*bo[11]  :+ 
+                        lnsiLp:*bo[12] :+ lnsiLp:*otherlp:*lnewsLp*bo[13] :+
+                        lnsiLp:*otherlp:*nnewsLp*bo[14] :+ lnsiLp:*nnewsp:*lnewsLp*bo[15] :+
+                        lnsiLp:*nnewsp:*nnewsLp*bo[16] :+ totlnewsp:*bo[17] :+ totnnewsp*bo[18] :+
+                        logPop*bo[19] :+ ln(1 :+ lnewsnp :+ otherlp :- lnewsp)*bo[20] :+ 
+                        ln(1 :+ lnewsnp :+ lnewsp :- otherlp)*bo[21] :+ nnewsnp*bo[22] :+ othercnp*bo[23] :+ bo[27]
+                
+                uv[i, looper::looper + timeslots - 1]  = uvHat :+ vErr
+                
+                muv = otherlp:*bo[1] :+ lnewsp:*bo[2] :+ nnewsp:*bo[3] :+ othercp:*bo[4]
+                
+                guv =  lnnd(vErr, 0, ln(sdmodv)) :- ln(normal(vB)) :- ln(1 :- muv) :+ 
+                        ln(1 :- muv:*siHat:/sgHat :- (1 :- muv):*siHat)
+                
+                uvg[i, looper::looper + timeslots - 1] = guv
+                uvb[i, looper::looper + timeslots - 1] = muv :+ vB
+            }
+        }
+        looper = looper + timeslots
+    }
+
+end
+
+mata:
+    NashProfiles=asarray_create("real", 4)
+    NashProfits  =asarray_create("real", 3)
+    NashShares =asarray_create("real", 3)
+    PriceMaxSps=asarray_create("real", 2) 
     
     actsToTry=10
-    timeslots = 6
-
-end
-
-mata:
-	UvmodObsLong4=J(rows(lnewsLong),timeslots*draws,0)
-	counter=0
-	for (d=1;d<=draws;d++) {
-		for (t=1;t<=timeslots;t++) {
-			yvt=ln(siLong[,t]):-ln(1:-slnewsLong[,t]:-snnewsLong[,t]:-sotherlLong[,t]:-sothercLong[,t])
-			sigmaStuff=bo[1]:*lnswgLong[,t]:*lnewsLong[,t]:+bo[2]:*lnswgLong[,t]:*otherlLong[,t]:+
-				bo[3]:*lnswgLong[,t]:*nnewsLong[,t]:+bo[4]:*lnswgLong[,t]:*othercLong[,t]
-			XVt=lnewsLong[,t],otherlLong[,t],nnewsLong[,t],
-				lnewsLong[,t]:*lnewsLongLag[,t],lnewsLong[,t]:*nnewsLongLag[,t],
-				nnewsLong[,t]:*lnewsLongLag[,t],nnewsLong[,t]:*nnewsLongLag[,t],
-				siLongLag[,t],siXlnln[,t],siXlnnn[,t],siXnnln[,t],siXnnnn[,t],
-				lnewsLong[,t]:*ln(1:+totlnews[,t]),nnewsLong[,t]:*ln(1:+totnnews[,t]),l_ACS_HHLong[,t],
-				lnewsnLong[,t],otherlnLong[,t],nnewsnLong[,t],othercnLong[,t],J(rows(lnewsLong),1,1)
-			UvmodObsLong4[,counter+t]=yvt:-sigmaStuff:-XVt*betaDynoStart':-UvsLong[,counter+t]:-UvmtLong[,counter+t]		/* This is critical with more expansive RE simulation */
-		}
-		counter=counter+timeslots
-	}
+    counter=1
 
 
 end
 
+
 mata:
-	counter = 1
     for (d=1;d<=draws;d++) {
-
+    
         for (i=1;i<=rows(mLong);i++) {
             gameMarkerp=panelsubmatrix(gameMarker,i,mLong)
             playersp=colsum(gameMarkerp)
-d,i,playersp
+
             if (playersp>0) {
                 statIdLongp=panelsubmatrix(statIdLong,i,mLong)   
                 Gamers=select(statIdLongp,gameMarkerp)           
@@ -728,16 +546,9 @@ d,i,playersp
                 UvmodLongp=panelsubmatrix(UvmodLong,i,mLong)
                 UvsLongp=panelsubmatrix(UvsLong,i,mLong)
                 XBVngLongp=panelsubmatrix(XBVngLong,i,mLong)
-                UvmodObsLongp=panelsubmatrix(UvmodObsLong4,i,mLong)
+                UvmodObsLongp=panelsubmatrix(UvmodObsLong,i,mLong)
 
-                for (g=1;g<=playersp;g++) {
-                    pricesToUse=asarray(simPrices,(Gamers[g],d))
-                    sharesToUse=asarray(sharesBcs,(Gamers[g],d,1))
-                    maxindex(rowsum(exp(pricesToUse)),actsToTry,iP=.,w=.)
-                    asarray(PriceMaxSps,(Gamers[g],d),iP)   
-                }
-
-                UpmodObsp=panelsubmatrix(UpmodObs,i,mLong)
+                UpmodobsLongp=panelsubmatrix(UpmodObs,i,mLong)
                 UpsLongp=panelsubmatrix(UpsLong,i,mLong)
                 UpmtLongp=panelsubmatrix(UpmtLong,i,mLong)
 
@@ -747,6 +558,7 @@ d,i,playersp
                 othercLongp=panelsubmatrix(othercLong,i,mLong)
                 popLongp=panelsubmatrix(popLong,i,mLong)
                 l_ACS_HHLongp=panelsubmatrix(l_ACS_HHLong,i,mLong)
+                popp = round(exp(max(l_ACS_HHLongp)))                
 
                 otherlOld=otherlLongp
                 lnewsOld=lnewsLongp
@@ -761,7 +573,7 @@ d,i,playersp
                 for (s=1;s<=1000;s++) {
                     targetPlayerN=round(1+(playersp-1)*runiform(1,1))
                     targetPlayer=Gamers[targetPlayerN]
-
+                    
                     lnewsPlayer=asarray(Bcs,(targetPlayer,1))
                     otherlPlayer=asarray(Bcs,(targetPlayer,2))
                     nnewsPlayer=asarray(Bcs,(targetPlayer,3))
@@ -769,121 +581,62 @@ d,i,playersp
                     newStrat=round(1+(rows(lnewsPlayer)-1)*runiform(1,1))
 
                     targetPos=posofGamers[targetPlayerN]
-                    lnewsTry=lnewsOld
-                    nnewsTry=nnewsOld
-                    otherlTry=otherlOld
-                    othercTry=othercOld
+                    lnewsHat=lnewsOld
+                    nnewsHat=nnewsOld
+                    otherlHat=otherlOld
+                    othercHat=othercOld
 
-                    lnewsTry[targetPos,]=lnewsPlayer[newStrat,]
-                    nnewsTry[targetPos,]=nnewsPlayer[newStrat,]
-                    otherlTry[targetPos,]=otherlPlayer[newStrat,]
- 
-                    fail=0
-                    g=1     
-
-                    simPpsInit=J(rows(lnewsTry),cols(lnewsTry),0)
-                    lnewsInit=lnewsTry
-                    nnewsInit=nnewsTry
-                    otherlInit=otherlTry
-                    othercInit=othercTry
-                    do {  
-                        rowsToTry=asarray(PriceMaxSps,(Gamers[g],d)) 
-                        playerPos=mm_which(statIdLongp:==Gamers[g]) 
-                        a=1                 
-                        firstTime=1         
-
+                    lnewsHat[targetPos,]=lnewsPlayer[newStrat,]
+                    nnewsHat[targetPos,]=nnewsPlayer[newStrat,]
+                    otherlHat[targetPos,]=otherlPlayer[newStrat,]
+                    
+                    lnewsInit=lnewsHat
+                    nnewsInit=nnewsHat
+                    otherlInit=otherlHat
+                    othercInit=othercHat
+                    
+                    errMarker=(lnewsLongp:==lnewsHat):*(otherlLongp:==otherlHat)                    
+                    
+                    Pbar = J(rows(Gamers), 1, 0)
+                    for (z=1; z<=rows(Gamers); z++) {
+                        playerPos=mm_which(statIdLongp:==Gamers[z]) 
+                        pId = statIdLongp[playerPos]
+                        errVdraws    = asarray(viewErrs, (pId,d))
+                        errPdraws    = asarray(priceErrs,(pId,d))
+                        PriceShareGenerator(1, 0, 0, playerPos , S=., P=., allShares = .)
+                        Pbar[z] = rowsum(exp(P))
+                    }  
+                    g = 1
+                    do {
+                        fail = 0
                         do {
-                            if (firstTime!=1) {
-                                lnewsDev=asarray(Bcs,(Gamers[g],1))[rowsToTry[a],]
-                                otherlDev=asarray(Bcs,(Gamers[g],2))[rowsToTry[a],]
-                                lnewsTry[playerPos,]=lnewsDev
-                                otherlTry[playerPos,]=otherlDev
-                            }
-
-                            lnewsLongLagp=J(rows(lnewsLongp),1,0)
-                            nnewsLongLagp=J(rows(lnewsLongp),1,0)
-                            otherlLongLagp=J(rows(lnewsLongp),1,0)
-                            siLagp=J(rows(lnewsLongp),1,0)
-                            totlnewsp=J(rows(lnewsLongp),1,0)
-                            totnnewsp=J(rows(nnewsLongp),1,0)
-
-                            lnewsnTry=lnewsTry:*ln(1:+colsum(lnewsTry))
-                            otherlnTry=otherlTry:*ln(1:+colsum(otherlTry))
-                            nnewsnTry=nnewsTry:*ln(1:+colsum(nnewsTry))
-                            othercnTry=othercTry:*ln(1:+colsum(othercTry))
-
-                            sharesTry=J(rows(lnewsLongp),0,0)
-                            for (t=1;t<=timeslots;t++) {
-                                if (t!=1) siLagp=ln(siLagp)
-								XV=lnewsTry[,t],otherlTry[,t],nnewsTry[,t],
-                                    lnewsLongLagp:*lnewsTry[,t],
-                                    nnewsLongLagp:*lnewsTry[,t],
-                                    lnewsLongLagp:*nnewsTry[,t], 
-                                    nnewsLongLagp:*nnewsTry[,t],siLagp,
-                                    siLagp:*lnewsLongLagp:*lnewsTry[,t],
-                                    siLagp:*nnewsLongLagp:*lnewsTry[,t],
-                                    siLagp:*lnewsLongLagp:*nnewsTry[,t],
-                                    siLagp:*nnewsLongLagp:*nnewsTry[,t],
-                                    lnewsTry[,t]:*ln(1:+totlnewsp),nnewsTry[,t]:*ln(1:+totnnewsp),l_ACS_HHLongp[,t],
-                                    lnewsnTry[,t],otherlnTry[,t],nnewsnTry[,t],othercnTry[,t],J(rows(lnewsLongp),1,1)
-
-                                    errCheck=lnewsTry[,t]:!=lnewsLongp[,t]
-                                    XBVact=XV*betaDynoStart':+UvmtLongp[,counter+t-1]:+
-                                    UvsLongp[,counter+t-1]:+UvmodObsLongp[,counter+t-1]
-                                    XBVsim=XV*betaDynoStart':+UvmtLongp[,counter+t-1]:+
-                                        UvsLongp[,counter+t-t]:+UvmodLongp[,counter+t-1]
-
-                                    XBV=(1:-errCheck):*XBVact:+errCheck:*XBVsim
-
-                                    sharesTry=sharesTry,eshares_up(XBV,lnewsTry[,t],otherlTry[,t],nnewsTry[,t],
-                                                                   othercLongp[,t],bo[1],bo[2],bo[3],bo[4])
-
-                                    siLagp=sharesTry[,t]
-
-                                    totlnewsp=totlnewsp:+J(rows(lnewsLongp),1,colsum(lnewsTry[,t]:*sharesTry[,t]))
-                                    totnnewsp=totnnewsp:+J(rows(nnewsLongp),1,colsum(nnewsTry[,t]:*sharesTry[,t]))
-
-                                    lnewsLongLagp=lnewsTry[,t]
-                                    nnewsLongLagp=nnewsTry[,t]
-                                    otherlLongLagp=otherlTry[,t]
-
-                            }
-
-                            errCheck=lnewsTry:!=lnewsLongp
-
-                            UpmodErrp=J(rows(UpmodObsp),timeslots,.)
-
-                            for (k=1;k<=playersp;k++) {
-                                UpmodErrp[posofGamers[k],]=asarray(priceErrs,(Gamers[k],d))
-                            }
-
-                            Errs=errCheck:*UpmodErrp:+(1:-errCheck):*UpmodObsp[,counter::counter+timeslots-1]
-                            simPps=(lnewsTry*bpo[1]:+otherlTry*bpo[2]:+nnewsTry*bpo[3]):*ln(sharesTry:*popLongp)+
-                                lnewsTry*bpo[4]:+otherlTry*bpo[5]:+l_ACS_HHLongp:*bpo[6]:+bpo[10]:+
-                                UpsLongp[,counter::counter+timeslots-1]:+UpmtLongp[,counter::counter+timeslots-1]:+
-                                Errs
-
-                            if (rowsum(exp(simPps[playerPos,]))>rowsum(exp(simPpsInit[playerPos,])) & firstTime!=1) fail=1
-                            if (firstTime==1) {
-                                firstTime=0
-                                simPpsInit=simPps
-                                sharesInit=sharesTry
-                            }
-                            else a++
+                            a = 1
+                            playerPos=mm_which(statIdLongp:==Gamers[g]) 
+                            pickfrom = rows(asarray(Bcs, (Gamers[g],1)))
+                            guesspos = round(1+(pickfrom-1)*runiform(1,1))
+                            lnewsDev=asarray(Bcs,(Gamers[g],1))[guesspos, ]
+                            otherlDev=asarray(Bcs,(Gamers[g],2))[guesspos, ]
+                            lnewsHat[playerPos,]  = lnewsDev
+                            otherlHat[playerPos,] = otherlDev
+                            errMarker=(lnewsLongp:==lnewsHat):*(otherlLongp:==otherlHat)                               
+                            errVdraws    = asarray(viewErrs, (pId,d))
+                            errPdraws    = asarray(priceErrs,(pId,d))                          
                             
+                            PriceShareGenerator(1, 0, 0, playerPos, S=., P=., allShares = .)
+                            
+                            Ptest = rowsum(exp(P[playerPos, ]))
+                            if (Ptest > Pbar[g]) fail = 1
+                            a++
                         } while (a<=actsToTry & fail==0)
                         g++
-
                     } while (g<=rows(Gamers) & fail==0)
+                    
                     if (fail==0) {
                         printf("New Equilibrium Found!\n") 
                         neq++
                         asarray(NashProfiles,(i,d,1,neq),lnewsInit)
                         asarray(NashProfiles,(i,d,2,neq),otherlInit)
                         asarray(NashProfiles,(i,d,3,neq),nnewsInit)
-                        asarray(NashShares,(i,d,neq),sharesInit)
-                        asarray(NashProfits,(i,d,neq),simPpsInit) 
-                        
                     }
                 }
             }
@@ -895,9 +648,6 @@ d,i,playersp
     fclose(fh)
     }
 
-mata matsave AckerbergInfo up upg upb upre1 upre2 upre1g upre2g uv uvg vup uvsi uvso uvsg uvre1 uvre2 uvre1g uvre2g uvre2Weights Troublers, replace 
-mata matsave AckerbergObjs NashProfiles NashShares NashProfits sharesBcs priceErrs simPrices priceBounds, replace
 end
-	
-	
-end
+
+
