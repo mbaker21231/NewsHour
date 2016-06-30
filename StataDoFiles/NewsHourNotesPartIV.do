@@ -106,6 +106,8 @@ mata:
     UvmodObsLong=J(1,draws,1)#UvmodObsLong:-UvsLong:-UvmtLong
 end
 
+/* The above should in principle be okay, but might could be checked */
+
 mata:
     mata matuse betaPDynoStarts, replace
     
@@ -529,7 +531,6 @@ mata:
 
 end
 
-
 mata:
     for (d=1;d<=draws;d++) {
     
@@ -577,10 +578,16 @@ mata:
                     lnewsPlayer=asarray(Bcs,(targetPlayer,1))
                     otherlPlayer=asarray(Bcs,(targetPlayer,2))
                     nnewsPlayer=asarray(Bcs,(targetPlayer,3))
-                    
+                    targetPos=posofGamers[targetPlayerN]
+					
+					selector = rowsum(lnewsLongp[targetPlayerN,]:==lnewsPlayer) :>= 4
+					lnewsPlayer = select(lnewsPlayer, selector)
+					otherlPlayer = select(otherlPlayer, selector)
+					nnewsPlayer  = select(nnewsPlayer, selector)
+  
                     newStrat=round(1+(rows(lnewsPlayer)-1)*runiform(1,1))
 
-                    targetPos=posofGamers[targetPlayerN]
+
                     lnewsHat=lnewsOld
                     nnewsHat=nnewsOld
                     otherlHat=otherlOld
