@@ -1,10 +1,6 @@
 /* Edits - getting the game straight */
 mata:
     NashProfiles=asarray_create("real", 4)
-    NashProfits  =asarray_create("real", 3)
-    NashShares =asarray_create("real", 3)
-    PriceMaxSps=asarray_create("real", 2) 
-
     counter=1
 end
 

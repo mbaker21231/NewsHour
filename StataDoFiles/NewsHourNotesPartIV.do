@@ -521,23 +521,15 @@ end
 
 mata:
     NashProfiles=asarray_create("real", 4)
-    NashProfits  =asarray_create("real", 3)
-    NashShares =asarray_create("real", 3)
-    PriceMaxSps=asarray_create("real", 2) 
-    
-    actsToTry=10
     counter=1
-
-
 end
 
 mata:
     for (d=1;d<=draws;d++) {
-    
         for (i=1;i<=rows(mLong);i++) {
             gameMarkerp=panelsubmatrix(gameMarker,i,mLong)
             playersp=colsum(gameMarkerp)
-
+			i,d
             if (playersp>0) {
                 statIdLongp=panelsubmatrix(statIdLong,i,mLong)   
                 Gamers=select(statIdLongp,gameMarkerp)           
@@ -559,102 +551,164 @@ mata:
                 othercLongp=panelsubmatrix(othercLong,i,mLong)
                 popLongp=panelsubmatrix(popLong,i,mLong)
                 l_ACS_HHLongp=panelsubmatrix(l_ACS_HHLong,i,mLong)
-                popp = round(exp(max(l_ACS_HHLongp)))                
-
-                otherlOld=otherlLongp
-                lnewsOld=lnewsLongp
-                nnewsOld=nnewsLongp
-                othercOld=othercLongp
+                popp = round(exp(max(l_ACS_HHLongp)))    
+				lnppsLongp = panelsubmatrix(lnppsLong, i, mLong)
 
                 neq=1
-                asarray(NashProfiles,(i,d,1,neq),lnewsOld)
-                asarray(NashProfiles,(i,d,2,neq),otherlOld)
-                asarray(NashProfiles,(i,d,3,neq),nnewsOld)
 
-                for (s=1;s<=1000;s++) {
-                    targetPlayerN=round(1+(playersp-1)*runiform(1,1))
-                    targetPlayer=Gamers[targetPlayerN]
+                asarray(NashProfiles,(i,d,1,neq),lnewsLongp)
+                asarray(NashProfiles,(i,d,2,neq),otherlLongp)
+                asarray(NashProfiles,(i,d,3,neq),nnewsLongp)
+                EVdraws=J(rows(UvmodObsLongp),timeslots,0)
+	            EPdraws=J(rows(UvmodObsLongp),timeslots,0)
+	
+                for (z=1; z<=playersp;z++) {
+		            EVdraws[posofGamers[z],] = asarray(viewErrs, (Gamers[z],d))
+                    EPdraws[posofGamers[z],] = asarray(priceErrs,(Gamers[z],d))
+	            }
+
+                for (s=1;s<=25;s++) {
+                    phlnewsLongp  = lnewsLongp
+                    phnnewsLongp  = nnewsLongp
+                    photherlLongp = otherlLongp
                     
-                    lnewsPlayer=asarray(Bcs,(targetPlayer,1))
-                    otherlPlayer=asarray(Bcs,(targetPlayer,2))
-                    nnewsPlayer=asarray(Bcs,(targetPlayer,3))
-                    targetPos=posofGamers[targetPlayerN]
+                    lnewsHat=lnewsLongp
+                    nnewsHat=nnewsLongp
+                    otherlHat=otherlLongp
 					
-					selector = rowsum(lnewsLongp[targetPlayerN,]:==lnewsPlayer) :>= 4
-					lnewsPlayer = select(lnewsPlayer, selector)
-					otherlPlayer = select(otherlPlayer, selector)
-					nnewsPlayer  = select(nnewsPlayer, selector)
+					/* Initial perturbation */
+
+                    for (pp=1;pp<=playersp;pp++) {
+					
+                        targetPlayer=Gamers[pp]
+     					lnewsPlayer=asarray(Bcs,(targetPlayer,1))
+                        otherlPlayer=asarray(Bcs,(targetPlayer,2))
+                        nnewsPlayer=asarray(Bcs,(targetPlayer,3))
+                        targetPos=posofGamers[pp]
+					
+      			    	selector = rowsum(lnewsLongp[targetPos,]:==lnewsPlayer) :>= 0
+		    		    lnewsPlayer = select(lnewsPlayer, selector)
+			    	    otherlPlayer = select(otherlPlayer, selector)
+				        nnewsPlayer  = select(nnewsPlayer, selector)
   
-                    newStrat=round(1+(rows(lnewsPlayer)-1)*runiform(1,1))
+                        newStrat=round(1+(rows(lnewsPlayer)-1)*runiform(1,1))
+  
+	     				lnewsHat[targetPos,]=lnewsPlayer[newStrat,]
+                        nnewsHat[targetPos,]=nnewsPlayer[newStrat,]
+                        otherlHat[targetPos,]=otherlPlayer[newStrat,]
+                   } 
+				
+				   currentvals = J(playersp,1,0)
+				   tries = 1
+                   maxtries = 20
+                   
+				   do {
+                       lnewsOrig = lnewsHat
+                       for (pp=1;pp<=playersp;pp++) {
+    	                   targetPlayer=Gamers[pp]
+                           lnewsPlayer=asarray(Bcs,(targetPlayer,1))
+                           otherlPlayer=asarray(Bcs,(targetPlayer,2))
+                           nnewsPlayer=asarray(Bcs,(targetPlayer,3))
+                           targetPos=posofGamers[pp]
+					
+      			           selector = rowsum(lnewsLongp[targetPos,]:==lnewsPlayer) :>= 0
+		    		       lnewsPlayer = select(lnewsPlayer, selector)
+			    	       otherlPlayer = select(otherlPlayer, selector)
+				           nnewsPlayer  = select(nnewsPlayer, selector)
+							
+						   for (g=1;g<=rows(lnewsPlayer);g++) {
+                               lnewsOld = lnewsHat
+						       nnewsOld = nnewsHat
+						       otherlOld = otherlHat
 
+							   lnewsHat[targetPos,]=lnewsPlayer[g,]
+                               nnewsHat[targetPos,]=nnewsPlayer[g,]
+                               otherlHat[targetPos,]=otherlPlayer[g,]
+                    
+					           errMarker=(lnewsHat:==phlnewsLongp):*(otherlHat:==photherlLongp)					
+	              			   veToUse = UvmodObsLongp[,counter::counter + timeslots - 1]:*errMarker :+ EVdraws:*(1 :- errMarker)
+					           peToUse = UpmodobsLongp[,counter::counter + timeslots - 1]:*errMarker :+ EPdraws:*(1 :- errMarker)
+    
+               	               lnewsLongLagp=J(rows(lnewsLongp),1,0)
+                               nnewsLongLagp=J(rows(lnewsLongp),1,0)
+                               otherlLongLagp=J(rows(lnewsLongp),1,0)
+                               siLagp=J(rows(lnewsLongp),1,0)
+                               totlnewsp=J(rows(lnewsLongp),1,0)
+                               totnnewsp=J(rows(nnewsLongp),1,0)
+    
+                               lnewsnLongp=lnewsHat:*ln(1:+colsum(lnewsHat))
+                               otherlnLongp=otherlHat:*ln(1:+colsum(otherlHat))
+                               nnewsnLongp=nnewsHat:*ln(1:+colsum(nnewsHat))
+                               othercnLongp=othercLongp:*ln(1:+colsum(othercLongp))
 
-                    lnewsHat=lnewsOld
-                    nnewsHat=nnewsOld
-                    otherlHat=otherlOld
-                    othercHat=othercOld
+              				   simShares = J(rows(lnewsLongp),timeslots,.)
+                               for (t=1;t<=timeslots ;t++) {
+                                   if (t!=1) siLagp=ln(siLagp)
+                                   XV=lnewsHat[,t],otherlHat[,t],nnewsHat[,t],
+                                       lnewsLongLagp:*lnewsHat[,t],
+                                       nnewsLongLagp:*lnewsHat[,t],
+                                       lnewsLongLagp:*nnewsHat[,t],
+                                       nnewsLongLagp:*nnewsHat[,t],
+                                       siLagp,
+                                       siLagp:*lnewsLongLagp:*lnewsHat[,t],
+                                       siLagp:*nnewsLongLagp:*lnewsHat[,t],
+                                       siLagp:*lnewsLongLagp:*nnewsHat[,t],
+                                       siLagp:*nnewsLongLagp:*nnewsHat[,t],
+                                       lnewsHat[,t]:*ln(1:+totlnewsp),nnewsHat[,t]:*ln(1:+totnnewsp),
+                                       l_ACS_HHLongp[,t],lnewsnLongp[,t],otherlnLongp[,t],
+                                       nnewsnLongp[,t],othercnLongp[,t],J(rows(lnewsHat),1,1)
+ 
+                                   XBV=XV*betaDynoStart':+UvmtLongp[,counter+t-1]:+
+                                       UvsLongp[,counter+t-1]:+UvmodObsLongp[,counter+t-1]:+veToUse[,t]
 
-                    lnewsHat[targetPos,]=lnewsPlayer[newStrat,]
-                    nnewsHat[targetPos,]=nnewsPlayer[newStrat,]
-                    otherlHat[targetPos,]=otherlPlayer[newStrat,]
-                    
-                    lnewsInit=lnewsHat
-                    nnewsInit=nnewsHat
-                    otherlInit=otherlHat
-                    othercInit=othercHat
-                    
-                    errMarker=(lnewsLongp:==lnewsHat):*(otherlLongp:==otherlHat)                    
-                    
-                    Pbar = J(rows(Gamers), 1, 0)
-                    for (z=1; z<=rows(Gamers); z++) {
-                        playerPos=mm_which(statIdLongp:==Gamers[z]) 
-                        pId = statIdLongp[playerPos]
-                        errVdraws    = asarray(viewErrs, (pId,d))
-                        errPdraws    = asarray(priceErrs,(pId,d))
-                        PriceShareGenerator(1, 0, 0, playerPos , S=., P=., allShares = .)
-                        Pbar[z] = rowsum(exp(P))
-                    }  
-                    g = 1
-                    do {
-                        fail = 0
-                        do {
-                            a = 1
-                            playerPos=mm_which(statIdLongp:==Gamers[g]) 
-                            pickfrom = rows(asarray(Bcs, (Gamers[g],1)))
-                            guesspos = round(1+(pickfrom-1)*runiform(1,1))
-                            lnewsDev=asarray(Bcs,(Gamers[g],1))[guesspos, ]
-                            otherlDev=asarray(Bcs,(Gamers[g],2))[guesspos, ]
-                            lnewsHat[playerPos,]  = lnewsDev
-                            otherlHat[playerPos,] = otherlDev
-                            errMarker=(lnewsLongp:==lnewsHat):*(otherlLongp:==otherlHat)                               
-                            errVdraws    = asarray(viewErrs, (pId,d))
-                            errPdraws    = asarray(priceErrs,(pId,d))                          
-                            
-                            PriceShareGenerator(1, 0, 0, playerPos, S=., P=., allShares = .)
-                            
-                            Ptest = rowsum(exp(P[playerPos, ]))
-                            if (Ptest > Pbar[g]) fail = 1
-                            a++
-                        } while (a<=actsToTry & fail==0)
-                        g++
-                    } while (g<=rows(Gamers) & fail==0)
-                    
-                    if (fail==0) {
-                        printf("New Equilibrium Found!\n") 
-                        neq++
-                        asarray(NashProfiles,(i,d,1,neq),lnewsInit)
-                        asarray(NashProfiles,(i,d,2,neq),otherlInit)
-                        asarray(NashProfiles,(i,d,3,neq),nnewsInit)
-                    }
-                }
-            }
+                                   sharesP=esharesStable(XBV,lnewsHat[,t],otherlHat[,t],nnewsHat[,t],
+                                       othercLongp[,t],bo[1],bo[2],bo[3],bo[4])
+                                   simShares[,t] = sharesP
+							
+					               siLagp=sharesP
+
+                                   totlnewsp=totlnewsp:+J(rows(lnewsHat),1,colsum(lnewsHat[,t]:*sharesP))
+                                   totnnewsp=totnnewsp:+J(rows(nnewsHat),1,colsum(nnewsHat[,t]:*sharesP))
+                                   lnewsLongLagp=lnewsHat[,t]
+                                   nnewsLongLagp=nnewsHat[,t]
+                                   otherlLongLagp=otherlHat[,t]
+                               }
+						
+					           simPrice = (lnewsHat[posofGamers[pp],]*bpo[1]:+otherlHat[posofGamers[pp],]*bpo[2]:+
+					               nnewsHat[posofGamers[pp],]*bpo[3]):*ln(popp:*simShares[posofGamers[pp],]):+
+                                   lnewsHat[posofGamers[pp],]:*bpo[4]:+otherlHat[posofGamers[pp],]*bpo[5]:+
+					               bpo[6]:*l_ACS_HHLongp[posofGamers[pp],]:+bpo[10]:+
+                                   UpsLongp[posofGamers[pp], counter::counter+timeslots-1]:+
+					               UpmtLongp[posofGamers[pp], counter::counter+timeslots-1] :+
+			                       peToUse[posofGamers[pp],]
+					
+					           if (rowsum(exp(simPrice)) < currentvals[pp]) {
+	 				               lnewsHat = lnewsOld
+	 				               nnewsHat  = nnewsOld
+						           otherlHat = otherlOld
+					           }
+							   else {
+									 currentvals[pp] = rowsum(exp(simPrice))
+							   }
+						   }
+					   }
+					   tries++
+				   } while ( (lnewsHat != lnewsOrig) & (tries < maxtries ))
+				       if (lnewsHat != phlnewsLongp) {
+                           neq++  
+                           asarray(NashProfiles,(i,d,1,neq),lnewsHat)
+                           asarray(NashProfiles,(i,d,2,neq),otherlHat)
+                           asarray(NashProfiles,(i,d,3,neq),nnewsHat)
+				       }
+				   }
+     			   lnewsLongp  = phlnewsLongp
+				   nnewsLongp  = nnewsLongp
+				   otherlLongp = photherlLongp			
+                }	
+			}		
         }
-    counter=counter+timeslots
-        
-    fh = fopen("Notifier\record", "rw")
-    fwrite(fh, "Something")
-    fclose(fh)
-    }
-
+		counter = counter + timeslots
+	}				
+					
+    mata matsave NashStuff NashProfiles, replace					
 end
-
-
