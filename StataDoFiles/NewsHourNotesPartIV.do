@@ -418,6 +418,8 @@ mata:
 	up  = J(rows(statIdLong), timeslots*draws, 0)
 	upg = J(rows(statIdLong), timeslots*draws, 0)
 	upb = J(rows(statIdLong), timeslots*draws, 0)
+	usi = J(rows(statIdLong), timeslots*draws, 0)
+	usg = J(rows(statIdLong), timeslots*draws, 0)
 end
 
 mata:
@@ -449,6 +451,8 @@ looper = 1
                 up[i, looper::looper + timeslots - 1]  = pHat
                 upg[i, looper::looper + timeslots - 1] = gup
                 upb[i, looper::looper + timeslots - 1] = meanPHat :+ pB
+				usi[i, looper::looper + timeslots - 1] = siHat
+				usg[i, looper::looper + timeslots - 1] = sgHat
             }
         }
         looper = looper + timeslots
