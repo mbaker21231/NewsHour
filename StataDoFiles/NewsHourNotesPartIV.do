@@ -1,6 +1,5 @@
 capture cd "C:\Users\Matthew Baker\Documents\GitHub\NewsHour"
 capture cd "C:\Users\mjbaker\Documents\GitHub\NewsHour"
-capture cd "C:\Users\Administrator\Documents\Github\NewsHour"
 clear all
 use AveragedDataDyno.dta
 set more off
@@ -716,8 +715,4 @@ mata:
 	}				
 					
     mata matsave NashStuff NashProfiles, replace					
-end
-
-mata
-    mata matsave usANDgs upre1 upre2 uvre1 uvre2 upre1g upre2g uvre1g uvre2g up upg upb uv uvg uvb usi usg, replace
 end
