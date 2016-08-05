@@ -53,6 +53,7 @@ Temporary Items
 *.dta
 *.mmat
 *.log
+*.zip
 
 # Private python config files:
 mailconfig.py
